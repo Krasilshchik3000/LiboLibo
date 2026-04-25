@@ -48,6 +48,7 @@ struct PodcastDetailView: View {
                             systemImage: subscriptions.isSubscribed(podcast) ? "checkmark" : "plus"
                         )
                         .frame(maxWidth: .infinity, minHeight: 44)
+                        .foregroundStyle(.white)
                     }
                     .buttonStyle(.borderedProminent)
                     .tint(subscriptions.isSubscribed(podcast) ? .secondary : .liboRed)
