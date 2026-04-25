@@ -42,7 +42,7 @@ struct PodcastsView: View {
         let cutoff = Date().addingTimeInterval(-90 * 86400)
         return repository.podcasts
             .filter { ($0.lastEpisodeDate ?? .distantPast) >= cutoff }
-            .sorted { ($0.lastEpisodeDate ?? .distantPast) > ($1.lastEpisodeDate ?? .distantPast) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private var recent: [Podcast] {
@@ -53,7 +53,7 @@ struct PodcastsView: View {
                 guard let d = $0.lastEpisodeDate else { return false }
                 return d < threeAgo && d >= twelveAgo
             }
-            .sorted { ($0.lastEpisodeDate ?? .distantPast) > ($1.lastEpisodeDate ?? .distantPast) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 
     private var dormant: [Podcast] {
@@ -63,7 +63,7 @@ struct PodcastsView: View {
                 guard let d = p.lastEpisodeDate else { return true }
                 return d < twelveAgo
             }
-            .sorted { ($0.lastEpisodeDate ?? .distantPast) > ($1.lastEpisodeDate ?? .distantPast) }
+            .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
 }
 
