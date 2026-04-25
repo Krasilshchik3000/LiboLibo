@@ -12,6 +12,7 @@
     "start": "node dist/server.js",
     "seed": "tsx src/lib/seed.ts",
     "refresh": "tsx src/transistor/refresh-cli.ts",
+    "refresh:instagram": "tsx src/instagram/refresh-cli.ts",
     "test": "vitest run",
     "test:watch": "vitest",
     "prisma:migrate": "prisma migrate dev",
