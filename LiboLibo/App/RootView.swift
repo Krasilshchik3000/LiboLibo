@@ -1,8 +1,13 @@
 import SwiftUI
 
 struct RootView: View {
+    enum SelectedTab: Hashable {
+        case feed, podcasts, profile, search
+    }
+
     @Environment(PlayerService.self) private var player
     @State private var showFullPlayer = false
+    @State private var selectedTab: SelectedTab = .feed
 
     var body: some View {
         tabContainer
@@ -21,24 +26,51 @@ struct RootView: View {
         }
     }
 
+    // MARK: - iOS 26+: Tab API + tabViewBottomAccessory only when episode loaded
+
     @available(iOS 26.0, *)
+    @ViewBuilder
     private var modernTabView: some View {
-        TabView {
-            tabs
-        }
-        .tabBarMinimizeBehavior(.onScrollDown)
-        .tabViewBottomAccessory {
-            if player.currentEpisode != nil {
+        if player.currentEpisode != nil {
+            TabView(selection: $selectedTab) {
+                modernTabs
+            }
+            .tabBarMinimizeBehavior(.onScrollDown)
+            .tabViewBottomAccessory {
                 MiniPlayerView()
                     .contentShape(Rectangle())
                     .onTapGesture { showFullPlayer = true }
             }
+        } else {
+            TabView(selection: $selectedTab) {
+                modernTabs
+            }
+            .tabBarMinimizeBehavior(.onScrollDown)
         }
     }
 
+    @available(iOS 18.0, *)
+    @TabContentBuilder<SelectedTab>
+    private var modernTabs: some TabContent<SelectedTab> {
+        Tab("Фид", systemImage: "list.dash", value: SelectedTab.feed) {
+            FeedView()
+        }
+        Tab("Подкасты", systemImage: "rectangle.grid.2x2", value: SelectedTab.podcasts) {
+            PodcastsView()
+        }
+        Tab("Моё", systemImage: "person.crop.circle", value: SelectedTab.profile) {
+            ProfileView()
+        }
+        Tab(value: SelectedTab.search, role: .search) {
+            SearchView()
+        }
+    }
+
+    // MARK: - iOS 18–25: same tabs, legacy bottom accessory
+
     private var legacyTabView: some View {
-        TabView {
-            tabs
+        TabView(selection: $selectedTab) {
+            modernTabs
         }
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if player.currentEpisode != nil {
@@ -56,29 +88,6 @@ struct RootView: View {
             }
         }
         .animation(.easeInOut(duration: 0.2), value: player.currentEpisode?.id)
-    }
-
-    @ViewBuilder
-    private var tabs: some View {
-        FeedView()
-            .tabItem {
-                Label("Фид", systemImage: "list.dash")
-            }
-
-        PodcastsView()
-            .tabItem {
-                Label("Подкасты", systemImage: "rectangle.grid.2x2")
-            }
-
-        SearchView()
-            .tabItem {
-                Label("Поиск", systemImage: "magnifyingglass")
-            }
-
-        ProfileView()
-            .tabItem {
-                Label("Моё", systemImage: "person.crop.circle")
-            }
     }
 }
 
