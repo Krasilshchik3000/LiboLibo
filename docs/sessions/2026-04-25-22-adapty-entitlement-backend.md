@@ -54,6 +54,12 @@
 - UX скачанных премиум-эпизодов после истечения подписки — обсудить перед iOS-сессией.
 - Опц. webhook на `subscription_renewed/expired` — оценить после первой недели в проде.
 
+## Деплой на main
+
+Пользователь дал ключи Adapty (`subs.env`, не в репо) — проставил `ADAPTY_SECRET_KEY` в Railway Variables сервиса `LiboLibo` (production) через `railway variable set`. Access level — `premium` (default), отдельная переменная не нужна.
+
+Ветка смерджена в `main` — Railway запустит `prisma db push --skip-generate` на старте, добавит таблицу `entitlements`, и ручки `/v1/me/entitlement` и `/v1/me/entitlement/refresh` станут доступны на проде. Поведение для существующих клиентов не меняется: без заголовка `X-Adapty-Profile-Id` viewer остаётся анонимным, `audio_url: null` для премиум-эпизодов как и раньше.
+
 ## Следующий шаг
 
-iOS-сессия после получения ключей: SPM-зависимость Adapty, `AdaptyService`, заголовок `X-Adapty-Profile-Id` в `APIClient`, paywall (AdaptyUI), кнопка Restore в `ProfileView`, метка «премиум» в `EpisodeListItem`.
+iOS-сессия: SPM-зависимость Adapty, `AdaptyService` (activate с public-ключом из `subs.env`, observe profile, purchase, restore), заголовок `X-Adapty-Profile-Id` в `APIClient`, paywall (AdaptyUI), кнопка Restore в `ProfileView`, метка «премиум» в `EpisodeListItem`.
