@@ -43,10 +43,8 @@ final class AdaptyService {
     /// зовётся отдельно из composition root, чтобы вызывающий мог решить,
     /// нужно ли перезагружать ленту.
     func activate() async {
-        guard let key = Bundle.main.object(forInfoDictionaryKey: "ADAPTY_PUBLIC_SDK_KEY") as? String,
-              !key.isEmpty else {
-            return
-        }
+        let key = AdaptyConfig.publicSDKKey
+        guard !key.isEmpty else { return }
         do {
             let configuration = AdaptyConfiguration
                 .builder(withAPIKey: key)
