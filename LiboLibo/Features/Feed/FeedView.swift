@@ -38,10 +38,14 @@ struct FeedView: View {
             )
         } else {
             List(repository.allEpisodes) { episode in
-                EpisodeListItem(episode: episode) {
-                    let context = repository.allEpisodes.sorted { $0.pubDate < $1.pubDate }
-                    player.play(episode, context: context)
-                }
+                EpisodeListItem(
+                    episode: episode,
+                    onPlay: {
+                        let context = repository.allEpisodes.sorted { $0.pubDate < $1.pubDate }
+                        player.play(episode, context: context)
+                    },
+                    onShowDetail: { path.append(episode) }
+                )
                 .swipeActions(edge: .trailing) {
                     Button { downloads.toggle(episode) } label: {
                         switch downloads.status(for: episode) {
@@ -64,6 +68,7 @@ struct FeedView: View {
 struct EpisodeListItem: View {
     let episode: Episode
     let onPlay: () -> Void
+    let onShowDetail: () -> Void
     var showsPodcastName: Bool = true
 
     var body: some View {
@@ -71,19 +76,12 @@ struct EpisodeListItem: View {
             // Премиум-эпизод без entitlement играть нельзя — тап по строке
             // открывает деталь (там тизер «Доступно по подписке»),
             // а не молчаливый no-op в плеере.
-            if episode.isPlayable {
-                Button(action: onPlay) {
-                    EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
-                }
-                .buttonStyle(.plain)
-            } else {
-                NavigationLink(value: episode) {
-                    EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
-                }
-                .buttonStyle(.plain)
+            Button(action: episode.isPlayable ? onPlay : onShowDetail) {
+                EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
             }
+            .buttonStyle(.plain)
 
-            NavigationLink(value: episode) {
+            Button(action: onShowDetail) {
                 Image(systemName: "info.circle")
                     .font(.title3)
                     .foregroundStyle(.secondary)

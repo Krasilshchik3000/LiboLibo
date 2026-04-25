@@ -44,7 +44,7 @@ struct ProfileView: View {
                 }
             }
             .navigationTitle("Моё")
-            .navigationDestination(for: Podcast.self) { PodcastDetailView(podcast: $0) }
+            .navigationDestination(for: Podcast.self) { PodcastDetailView(podcast: $0, path: $path) }
             .navigationDestination(for: Episode.self) { EpisodeDetailView(episode: $0) }
             .alert("Очистить историю?", isPresented: $showsClearHistoryAlert) {
                 Button("Очистить", role: .destructive) {
@@ -93,7 +93,8 @@ struct ProfileView: View {
                 let episode = item.asEpisode
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) }
+                    onPlay: { player.play(episode) },
+                    onShowDetail: { path.append(episode) }
                 )
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -116,7 +117,8 @@ struct ProfileView: View {
                             .filter { $0.podcastId == episode.podcastId }
                             .sorted { $0.pubDate < $1.pubDate }
                         player.play(episode, context: context)
-                    }
+                    },
+                    onShowDetail: { path.append(episode) }
                 )
             }
         }
@@ -128,7 +130,8 @@ struct ProfileView: View {
                 let episode = history.episode(for: item)
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) }
+                    onPlay: { player.play(episode) },
+                    onShowDetail: { path.append(episode) }
                 )
             }
         } header: {

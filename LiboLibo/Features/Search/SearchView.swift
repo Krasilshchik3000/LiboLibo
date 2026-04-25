@@ -11,7 +11,7 @@ struct SearchView: View {
         NavigationStack(path: $path) {
             content
                 .navigationTitle("Поиск")
-                .navigationDestination(for: Podcast.self) { PodcastDetailView(podcast: $0) }
+                .navigationDestination(for: Podcast.self) { PodcastDetailView(podcast: $0, path: $path) }
                 .navigationDestination(for: Episode.self) { EpisodeDetailView(episode: $0) }
                 .searchable(
                     text: $query,
@@ -80,7 +80,8 @@ struct SearchView: View {
                         ForEach(matchingEpisodes) { episode in
                             EpisodeListItem(
                                 episode: episode,
-                                onPlay: { player.play(episode) }
+                                onPlay: { player.play(episode) },
+                                onShowDetail: { path.append(episode) }
                             )
                         }
                     }

@@ -2,6 +2,11 @@ import SwiftUI
 
 struct PodcastDetailView: View {
     let podcast: Podcast
+    /// Привязка к пути родительского NavigationStack — чтобы тап по «i» в
+    /// строке выпуска пушил `EpisodeDetailView` в общую цепочку, а не в
+    /// локальный «висящий» path (он бы ничего не делал, у этого view нет
+    /// собственного NavigationStack).
+    @Binding var path: NavigationPath
 
     @Environment(PlayerService.self) private var player
     @Environment(SubscriptionsService.self) private var subscriptions
@@ -81,6 +86,7 @@ struct PodcastDetailView: View {
                                 let context = episodes.sorted { $0.pubDate < $1.pubDate }
                                 player.play(episode, context: context)
                             },
+                            onShowDetail: { path.append(episode) },
                             showsPodcastName: false
                         )
                         .listRowBackground(Color.clear)

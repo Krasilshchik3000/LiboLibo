@@ -34,7 +34,7 @@ struct PodcastsView: View {
             .listStyle(.insetGrouped)
             .navigationTitle("Подкасты")
             .navigationDestination(for: Podcast.self) { podcast in
-                PodcastDetailView(podcast: podcast)
+                PodcastDetailView(podcast: podcast, path: $path)
             }
         }
         .task(id: repository.podcasts.count) {
