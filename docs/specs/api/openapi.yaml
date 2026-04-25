@@ -6,7 +6,7 @@ info:
     API бэкенда «Либо-Либо», фаза 2.0.
     Источник правды по контенту — Transistor.fm; этот API нормализует, кэширует и контролирует доступ.
 servers:
-  - url: https://libolibo-api.up.railway.app/v1
+  - url: https://libolibo-production.up.railway.app/v1
     description: Railway (временный поддомен)
   - url: http://localhost:3000/v1
     description: Локальный Docker Compose
