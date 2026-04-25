@@ -16,6 +16,7 @@ final class APIClient {
     let baseURL: URL
     private let session: URLSession
     private let decoder: JSONDecoder
+    private var profileIdProvider: @MainActor () -> UUID? = { nil }
 
     init(baseURL: URL = APIClient.defaultBaseURL, session: URLSession = .shared) {
         self.baseURL = baseURL
@@ -24,6 +25,13 @@ final class APIClient {
         d.keyDecodingStrategy = .convertFromSnakeCase
         d.dateDecodingStrategy = .iso8601WithFractionalSeconds
         self.decoder = d
+    }
+
+    /// Должен быть вызван в composition root (LiboLiboApp) после создания
+    /// `AdaptyService`. Без provider'а заголовок `X-Adapty-Profile-Id` не
+    /// шлётся, и бэкенд видит анонимного зрителя.
+    func attachProfileIdProvider(_ provider: @escaping @MainActor () -> UUID?) {
+        self.profileIdProvider = provider
     }
 
     // MARK: - Endpoints
@@ -51,6 +59,19 @@ final class APIClient {
         return (page.items.map { $0.asEpisode }, page.nextCursor)
     }
 
+    /// Дёргает Adapty Server API на бэке, обновляет локальный кэш `entitlements`
+    /// и возвращает свежее состояние. Идемпотентно: сервер защищён rate-limit'ом
+    /// 1 запрос/5 секунд на профиль.
+    func refreshEntitlement() async throws -> EntitlementDTO {
+        try await post(path: "/me/entitlement/refresh")
+    }
+
+    /// Возвращает закэшированное на бэке значение без обращения к Adapty.
+    /// Если записи нет — `is_premium: false`. Полезно для дебага.
+    func fetchEntitlement() async throws -> EntitlementDTO {
+        try await get(path: "/me/entitlement")
+    }
+
     // MARK: - Internals
 
     private func queryItems(cursor: String?, limit: Int) -> [URLQueryItem] {
@@ -69,7 +90,35 @@ final class APIClient {
         if !query.isEmpty { components.queryItems = query }
         guard let url = components.url else { throw APIError.invalidURL }
 
-        let (data, response) = try await session.data(from: url)
+        var request = URLRequest(url: url)
+        request.httpMethod = "GET"
+        attachProfileHeader(to: &request)
+        return try await execute(request)
+    }
+
+    private func post<T: Decodable>(path: String) async throws -> T {
+        guard let url = URLComponents(
+            url: baseURL.appendingPathComponent(path),
+            resolvingAgainstBaseURL: false
+        )?.url else {
+            throw APIError.invalidURL
+        }
+        var request = URLRequest(url: url)
+        request.httpMethod = "POST"
+        request.setValue("application/json", forHTTPHeaderField: "Content-Type")
+        request.httpBody = Data("{}".utf8)
+        attachProfileHeader(to: &request)
+        return try await execute(request)
+    }
+
+    private func attachProfileHeader(to request: inout URLRequest) {
+        if let profileId = profileIdProvider() {
+            request.setValue(profileId.uuidString, forHTTPHeaderField: "X-Adapty-Profile-Id")
+        }
+    }
+
+    private func execute<T: Decodable>(_ request: URLRequest) async throws -> T {
+        let (data, response) = try await session.data(for: request)
         guard let http = response as? HTTPURLResponse else { throw APIError.transport }
         guard (200..<300).contains(http.statusCode) else {
             throw APIError.badStatus(http.statusCode)
@@ -90,6 +139,12 @@ final class APIClient {
 }
 
 // MARK: - DTO
+
+struct EntitlementDTO: Decodable, Sendable {
+    let isPremium: Bool
+    let expiresAt: Date?
+    let checkedAt: Date?
+}
 
 private struct PodcastsResponse: Decodable {
     let items: [PodcastDTO]

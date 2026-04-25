@@ -6,9 +6,13 @@ struct ProfileView: View {
     @Environment(HistoryService.self) private var history
     @Environment(DownloadService.self) private var downloads
     @Environment(PlayerService.self) private var player
+    @Environment(AdaptyService.self) private var adapty
 
     @State private var path = NavigationPath()
     @State private var showsClearHistoryAlert = false
+    @State private var showsPaywall = false
+    @State private var restoreAlert: RestoreAlertState?
+    @State private var isRestoring = false
 
     private var subscribedPodcasts: [Podcast] {
         repository.podcasts.filter { subscriptions.isSubscribed($0) }
@@ -27,6 +31,7 @@ struct ProfileView: View {
     var body: some View {
         NavigationStack(path: $path) {
             List {
+                premiumSection
                 subscriptionsSection
                 if !downloads.items.isEmpty {
                     downloadedSection
@@ -54,6 +59,103 @@ struct ProfileView: View {
             } message: {
                 Text("Список прослушанных выпусков будет удалён.")
             }
+            .alert(item: $restoreAlert) { state in
+                Alert(title: Text(state.title), message: Text(state.message), dismissButton: .default(Text("OK")))
+            }
+            .sheet(isPresented: $showsPaywall) {
+                AdaptyPaywallView(
+                    placementId: "profile-cta",
+                    onPurchase: {
+                        showsPaywall = false
+                        Task {
+                            if await adapty.refreshEntitlement() {
+                                await repository.loadAllEpisodes()
+                            }
+                        }
+                    },
+                    onClose: { showsPaywall = false }
+                )
+            }
+        }
+    }
+
+    private var premiumSection: some View {
+        Section("Премиум") {
+            if adapty.isPremium {
+                VStack(alignment: .leading, spacing: 6) {
+                    Label("Премиум активен", systemImage: "checkmark.seal.fill")
+                        .foregroundStyle(.liboRed)
+                        .font(.headline)
+                    if let expiresAt = adapty.expiresAt {
+                        Text("Действует до \(expiresAt.formatted(date: .long, time: .omitted))")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        Text("Бессрочный доступ")
+                            .font(.subheadline)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                .padding(.vertical, 4)
+
+                Link(destination: URL(string: "https://apps.apple.com/account/subscriptions")!) {
+                    Label("Управлять подпиской", systemImage: "arrow.up.forward.app")
+                }
+            } else {
+                VStack(alignment: .leading, spacing: 4) {
+                    Text("Премиум-подписка")
+                        .font(.headline)
+                    Text("Бонусные и эксклюзивные выпуски «Либо-Либо».")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                }
+                .padding(.vertical, 4)
+
+                Button {
+                    showsPaywall = true
+                } label: {
+                    Label("Оформить", systemImage: "lock.shield.fill")
+                        .foregroundStyle(.liboRed)
+                }
+
+                Button {
+                    Task { await runRestore() }
+                } label: {
+                    if isRestoring {
+                        HStack(spacing: 8) {
+                            ProgressView()
+                            Text("Восстанавливаем…")
+                        }
+                    } else {
+                        Label("Восстановить покупки", systemImage: "arrow.clockwise")
+                    }
+                }
+                .disabled(isRestoring)
+            }
+        }
+    }
+
+    private func runRestore() async {
+        isRestoring = true
+        defer { isRestoring = false }
+        let outcome = await adapty.restorePurchases()
+        switch outcome {
+        case .restored:
+            await repository.loadAllEpisodes()
+            restoreAlert = RestoreAlertState(
+                title: "Подписка восстановлена",
+                message: "Премиум-выпуски снова доступны."
+            )
+        case .nothingToRestore:
+            restoreAlert = RestoreAlertState(
+                title: "Покупок не найдено",
+                message: "На этом Apple ID нет активных подписок «Либо-Либо»."
+            )
+        case .failed:
+            restoreAlert = RestoreAlertState(
+                title: "Не получилось",
+                message: "Проверь интернет и попробуй ещё раз."
+            )
         }
     }
 
@@ -148,6 +250,12 @@ struct ProfileView: View {
                 .buttonStyle(.plain)
             }
         }
+    }
+
+    private struct RestoreAlertState: Identifiable {
+        let id = UUID()
+        let title: String
+        let message: String
     }
 
     private var emptyState: some View {

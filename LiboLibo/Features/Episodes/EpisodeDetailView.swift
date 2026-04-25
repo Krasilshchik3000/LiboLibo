@@ -7,6 +7,10 @@ struct EpisodeDetailView: View {
 
     @Environment(PlayerService.self) private var player
     @Environment(PodcastColorService.self) private var colors
+    @Environment(AdaptyService.self) private var adapty
+    @Environment(PodcastsRepository.self) private var repository
+
+    @State private var showsPaywall = false
 
     var body: some View {
         let tint = colors.tint(for: episode.podcastId)
@@ -25,6 +29,20 @@ struct EpisodeDetailView: View {
         .navigationBarTitleDisplayMode(.inline)
         .task(id: episode.podcastId) {
             colors.ensureTint(for: episode.podcastId, artworkUrl: episode.podcastArtworkUrl)
+        }
+        .sheet(isPresented: $showsPaywall) {
+            AdaptyPaywallView(
+                placementId: "episode-trigger",
+                onPurchase: {
+                    showsPaywall = false
+                    Task {
+                        if await adapty.refreshEntitlement() {
+                            await repository.loadAllEpisodes()
+                        }
+                    }
+                },
+                onClose: { showsPaywall = false }
+            )
         }
     }
 
@@ -81,16 +99,16 @@ struct EpisodeDetailView: View {
                     .frame(maxWidth: .infinity)
             }
         } else {
-            // Премиум-эпизод без активного entitlement: тизер.
-            Label("Доступно по подписке", systemImage: "lock.fill")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .frame(maxWidth: .infinity, minHeight: 44)
-                .padding(.horizontal, 12)
-                .background {
-                    RoundedRectangle(cornerRadius: 10)
-                        .stroke(Color.secondary.opacity(0.4))
-                }
+            // Премиум-эпизод без активного entitlement — кнопка ведёт на paywall.
+            Button {
+                showsPaywall = true
+            } label: {
+                Label("Слушать с премиумом", systemImage: "lock.fill")
+                    .frame(maxWidth: .infinity, minHeight: 44)
+                    .foregroundStyle(tint?.accentForeground ?? .white)
+            }
+            .buttonStyle(.borderedProminent)
+            .tint(tint?.accent ?? .accentColor)
         }
     }
 
