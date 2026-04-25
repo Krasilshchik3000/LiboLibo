@@ -1,0 +1,254 @@
+openapi: 3.1.0
+info:
+  title: Либо-Либо API
+  version: 0.1.0
+  description: |
+    API бэкенда «Либо-Либо», фаза 2.0.
+    Источник правды по контенту — Transistor.fm; этот API нормализует, кэширует и контролирует доступ.
+servers:
+  - url: https://libolibo-api.up.railway.app/v1
+    description: Railway (временный поддомен)
+  - url: http://localhost:3000/v1
+    description: Локальный Docker Compose
+
+paths:
+  /health:
+    get:
+      summary: Проверка работоспособности
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  ok: { type: boolean }
+                  db: { type: boolean }
+
+  /devices:
+    post:
+      summary: Регистрация нового устройства
+      description: iOS вызывает при первом запуске, сохраняет id в Keychain.
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apns_token:
+                  type: string
+                  nullable: true
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+
+  /devices/{id}:
+    patch:
+      summary: Обновить APNs-токен или зафиксировать активность
+      parameters:
+        - $ref: "#/components/parameters/DeviceId"
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                apns_token: { type: string, nullable: true }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Device"
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /podcasts:
+    get:
+      summary: Список всех подкастов студии
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  items:
+                    type: array
+                    items: { $ref: "#/components/schemas/Podcast" }
+
+  /podcasts/{id}:
+    get:
+      summary: Детали подкаста
+      parameters:
+        - $ref: "#/components/parameters/PodcastId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Podcast" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /podcasts/{id}/episodes:
+    get:
+      summary: Эпизоды одного подкаста (пагинация по pubDate desc)
+      parameters:
+        - $ref: "#/components/parameters/PodcastId"
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EpisodePage" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /feed:
+    get:
+      summary: Глобальная лента эпизодов всех подкастов
+      parameters:
+        - $ref: "#/components/parameters/Limit"
+        - $ref: "#/components/parameters/Cursor"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EpisodePage" }
+
+  /episodes/{id}:
+    get:
+      summary: Детали эпизода
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Episode" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+components:
+  parameters:
+    DeviceId:
+      name: id
+      in: path
+      required: true
+      schema: { type: string, format: uuid }
+    PodcastId:
+      name: id
+      in: path
+      required: true
+      schema: { type: integer, format: int64 }
+    Limit:
+      name: limit
+      in: query
+      required: false
+      schema: { type: integer, minimum: 1, maximum: 200, default: 50 }
+    Cursor:
+      name: cursor
+      in: query
+      required: false
+      schema: { type: string }
+      description: Непрозрачный курсор из предыдущего ответа (`next_cursor`).
+
+  responses:
+    NotFound:
+      description: Не найдено
+      content:
+        application/json:
+          schema: { $ref: "#/components/schemas/Error" }
+
+  schemas:
+    Device:
+      type: object
+      required: [id, created_at]
+      properties:
+        id: { type: string, format: uuid }
+        apns_token: { type: string, nullable: true }
+        created_at: { type: string, format: date-time }
+        last_seen_at: { type: string, format: date-time }
+
+    Podcast:
+      type: object
+      required: [id, name, feed_url]
+      properties:
+        id: { type: integer, format: int64 }
+        name: { type: string }
+        artist: { type: string, nullable: true }
+        feed_url: { type: string, format: uri }
+        artwork_url: { type: string, format: uri, nullable: true }
+        description: { type: string, nullable: true }
+        genres:
+          type: array
+          items: { type: string }
+        has_premium: { type: boolean }
+        last_episode_date:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Дата самого свежего выпуска (ISO-8601). Денормализованное поле,
+            пересчитывается воркером при апсерте эпизодов. Клиент использует
+            для деления подкастов на «выходят сейчас / недавно / давно не выходят».
+
+    Episode:
+      type: object
+      required: [id, podcast_id, title, pub_date, audio_url, is_premium]
+      properties:
+        id: { type: string }
+        podcast_id: { type: integer, format: int64 }
+        podcast_name: { type: string }
+        podcast_artwork_url: { type: string, format: uri, nullable: true }
+        title: { type: string }
+        summary: { type: string, nullable: true }
+        pub_date: { type: string, format: date-time }
+        duration_sec: { type: integer, nullable: true }
+        audio_url:
+          type: string
+          format: uri
+          nullable: true
+          description: |
+            Для публичных эпизодов — всегда заполнен.
+            Для премиум-эпизодов — `null`, пока у устройства нет активного
+            entitlement (entitlements появятся на фазе 2.3 вместе с Apple IAP).
+            Метаданные (`title`, `summary`, `pub_date`, `duration_sec`,
+            `podcast_artwork_url`) приходят всегда — это тизер для бесплатных
+            пользователей.
+        is_premium: { type: boolean }
+
+    EpisodePage:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Episode" }
+        next_cursor:
+          type: string
+          nullable: true
+          description: Передать в следующий запрос как `cursor`. `null` — конец.
+
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error: { type: string }
+        message: { type: string }
