@@ -8,12 +8,31 @@ struct RootView: View {
     @Environment(PlayerService.self) private var player
     @State private var showFullPlayer = false
     @State private var selectedTab: SelectedTab = .feed
+    @State private var pendingPodcastToOpenId: Int?
+    @State private var currentOpenedPodcastId: Int?
+    @State private var podcastsViewIdentity = UUID()
 
     var body: some View {
         tabContainer
             .sheet(isPresented: $showFullPlayer) {
                 PlayerView()
                     .presentationDragIndicator(.visible)
+            }
+            .onReceive(NotificationCenter.default.publisher(for: Notification.Name("OpenPodcastDetailFromPlayer"))) { note in
+                if let id = note.userInfo?["podcastId"] as? Int {
+                    if selectedTab == .podcasts, currentOpenedPodcastId == id {
+                        // Already on the same podcast detail — just dismiss the player.
+                        showFullPlayer = false
+                        return
+                    }
+                    selectedTab = .podcasts
+                    showFullPlayer = false
+                    podcastsViewIdentity = UUID()
+                    pendingPodcastToOpenId = nil
+                    DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
+                        pendingPodcastToOpenId = id
+                    }
+                }
             }
     }
 
@@ -56,7 +75,8 @@ struct RootView: View {
             FeedView()
         }
         Tab("Подкасты", systemImage: "rectangle.grid.2x2", value: SelectedTab.podcasts) {
-            PodcastsView()
+            PodcastsView(openPodcastId: $pendingPodcastToOpenId, currentOpenedPodcastId: $currentOpenedPodcastId)
+                .id(podcastsViewIdentity)
         }
         Tab("Моё", systemImage: "person.crop.circle", value: SelectedTab.profile) {
             ProfileView(onOpenPodcasts: { selectedTab = .podcasts })
