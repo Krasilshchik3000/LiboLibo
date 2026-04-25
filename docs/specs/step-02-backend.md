@@ -206,6 +206,26 @@ Hot reload — через `tsx watch` (см. скрипт `dev`).
 - iOS-приложение переключено на API: `RSSParser`, `PodcastsRepository.fetchFeed` и прямые походы в `feedUrl` удалены; `Episode.audioUrl` стал `URL?`, плеер и строки эпизодов корректно показывают премиум-тизер при `null`.
 - Никаких секретов в репозитории. `transistor.env` покрыт `*.env` в `.gitignore`.
 
+## Статус фазы 2.0 (на 2026-04-25)
+
+Фаза закрыта. Подробный аудит — в [docs/sessions/2026-04-25-17-status-audit.md](../sessions/2026-04-25-17-status-audit.md).
+
+| Пункт DoD | Статус |
+|---|---|
+| Премиум-эпизоды через Transistor API, `audio_url` = null без entitlement | Готово (`api/src/transistor/refresh.ts`, `api/src/lib/serialize.ts`) |
+| vitest на парсере RSS | Готово (`api/test/parser.test.ts`) |
+| OpenAPI 0.1 в `docs/specs/api/openapi.yaml` соответствует API | Готово |
+| `Episode.audioUrl` на iOS стал `URL?`, плеер показывает тизер при `null` | Готово |
+| Никаких секретов в репозитории, `transistor.env` под `*.env` | Готово |
+| `docker compose up` поднимает Postgres + API локально | Готово (`api/docker-compose.yml`, `api/README.md`) |
+| Railway: задеплоены `api` и `cron-refresh`, Postgres подключён | Готово (коммит `9525ba3`) |
+| Cron Service каждые 15 минут обновляет фиды | Готово |
+| iOS переключён на API: подкасты и эпизоды берутся с бэкенда | Готово (коммит `8201a3d`) |
+
+Подфаза 2.0.1 (премиум через Transistor API) — реализована и закрыта в коде; включение entitlement-флага оставлено на 2.3.
+
+Открытый хвост: в `LiboLibo/Services/` ещё лежат неиспользуемые `RSSParser.swift` и `PodcastsRepository.swift` — мёртвый код, удалить отдельной мелкой сессией.
+
 ## Дальнейшие подфазы (после 2.0)
 
 | Подфаза | Содержание |
