@@ -20,7 +20,7 @@ adminRouter.get("/", (_req, res) => {
   res.redirect("/admin/posts?status=pending");
 });
 
-adminRouter.get("/posts", async (req, res) => {
+adminRouter.get("/posts", (req, res, next) => { (async () => {
   const status = parseStatus(req.query.status);
   const posts = await prisma.instagramPost.findMany({
     where: status ? { status } : undefined,
@@ -61,9 +61,9 @@ adminRouter.get("/posts", async (req, res) => {
       counts: countsByStatus,
     }),
   });
-});
+})().catch(next); });
 
-adminRouter.get("/posts/:id", async (req, res) => {
+adminRouter.get("/posts/:id", (req, res, next) => { (async () => {
   const post = await prisma.instagramPost.findUnique({
     where: { id: req.params.id },
     include: { media: { orderBy: { order: "asc" } } },
@@ -103,9 +103,9 @@ adminRouter.get("/posts/:id", async (req, res) => {
       podcasts: podcasts.map((p) => ({ id: p.id.toString(), name: p.name })),
     }),
   });
-});
+})().catch(next); });
 
-adminRouter.post("/posts/:id", async (req, res) => {
+adminRouter.post("/posts/:id", (req, res, next) => { (async () => {
   const action = String(req.body.action ?? "");
   const ctaType = String(req.body.cta_type ?? "none");
 
@@ -165,13 +165,14 @@ adminRouter.post("/posts/:id", async (req, res) => {
       return;
   }
 
+  const id = String(req.params.id);
   await prisma.instagramPost.update({
-    where: { id: req.params.id },
+    where: { id },
     data,
   });
 
-  res.redirect(`/admin/posts/${req.params.id}`);
-});
+  res.redirect(`/admin/posts/${id}`);
+})().catch(next); });
 
 function parseStatus(raw: unknown): "PENDING" | "PUBLISHED" | "HIDDEN" | undefined {
   if (raw === "pending") return "PENDING";
