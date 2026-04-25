@@ -41,3 +41,10 @@ xcodebuild -scheme LiboLibo -sdk iphonesimulator -destination 'platform=iOS Simu
 ```
 
 Текущий план разработки и фазы — в [docs/specs/step-01-ios-skeleton.md](docs/specs/step-01-ios-skeleton.md).
+
+## Бэкенд
+
+Папка [`api/`](api/) — Node.js + Express + Prisma + Postgres, деплой на Railway.
+Локально поднимается одной командой через Docker Compose: см. [`api/README.md`](api/README.md).
+Спека фазы 2.0: [`docs/specs/step-02-backend.md`](docs/specs/step-02-backend.md).
+Контракт API: [`docs/specs/api/openapi.yaml`](docs/specs/api/openapi.yaml).

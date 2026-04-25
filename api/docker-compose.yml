@@ -1,0 +1,46 @@
+services:
+  db:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: libolibo
+      POSTGRES_PASSWORD: libolibo
+      POSTGRES_DB: libolibo
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "libolibo"]
+      interval: 2s
+      timeout: 2s
+      retries: 20
+
+  api:
+    build:
+      context: .
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgres://libolibo:libolibo@db:5432/libolibo
+      PORT: "3000"
+    # transistor.env лежит рядом, рядом же и .gitignore-ится (`*.env`).
+    # Файл опциональный: без него API запустится, премиум-эпизоды не подтянутся.
+    env_file:
+      - path: ./transistor.env
+        required: false
+    ports:
+      - "3000:3000"
+    volumes:
+      - ./src:/app/src
+      - ./prisma:/app/prisma
+      - ./test:/app/test
+      # JSON со списком подкастов для сидинга (read-only).
+      - ../docs/specs/podcasts-feeds.json:/app/seed/podcasts-feeds.json:ro
+    # `prisma db push` синхронизирует схему БД с schema.prisma без файлов миграций.
+    # На фазе 2.0 этого достаточно. Когда схема стабилизируется — заменим на
+    # `prisma migrate deploy` + чекинутые файлы миграций.
+    command: sh -c "npx prisma db push --skip-generate && npm run dev"
+
+volumes:
+  pgdata:

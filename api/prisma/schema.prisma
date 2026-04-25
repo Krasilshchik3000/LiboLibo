@@ -1,0 +1,74 @@
+// Prisma schema — фаза 2.0 бэкенда «Либо-Либо».
+// См. docs/specs/step-02-backend.md
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Podcast {
+  id                BigInt    @id
+  name              String
+  artist            String?
+  feedUrl           String    @unique @map("feed_url")
+  artworkUrl        String?   @map("artwork_url")
+  description       String?
+  genres            String[]
+  hasPremium        Boolean   @default(false) @map("has_premium")
+  // Дата самого свежего выпуска. По ней клиент делит подкасты на
+  // «выходят сейчас / недавно / давно не выходят».
+  // Денормализовано: пересчитывается воркером после апсерта эпизодов.
+  lastEpisodeDate   DateTime? @map("last_episode_date")
+  // Transistor.fm show id (resolved from API by feed_url at first refresh).
+  // Null → API integration disabled or show not in our account.
+  transistorShowId  String?   @unique @map("transistor_show_id")
+  createdAt         DateTime  @default(now()) @map("created_at")
+  updatedAt         DateTime  @updatedAt @map("updated_at")
+
+  episodes  Episode[]
+  feedFetch FeedFetch?
+
+  @@map("podcasts")
+}
+
+model Episode {
+  id          String   @id
+  podcastId   BigInt   @map("podcast_id")
+  podcast     Podcast  @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  title       String
+  summary     String?
+  pubDate     DateTime @map("pub_date")
+  durationSec Int?     @map("duration_sec")
+  audioUrl    String   @map("audio_url")
+  isPremium   Boolean  @default(false) @map("is_premium")
+  createdAt   DateTime @default(now()) @map("created_at")
+  updatedAt   DateTime @updatedAt @map("updated_at")
+
+  @@index([podcastId, pubDate(sort: Desc)])
+  @@index([pubDate(sort: Desc)])
+  @@map("episodes")
+}
+
+model FeedFetch {
+  podcastId    BigInt    @id @map("podcast_id")
+  podcast      Podcast   @relation(fields: [podcastId], references: [id], onDelete: Cascade)
+  etag         String?
+  lastModified String?   @map("last_modified")
+  lastOkAt     DateTime? @map("last_ok_at")
+  lastError    String?   @map("last_error")
+
+  @@map("feed_fetches")
+}
+
+model Device {
+  id         String   @id @default(uuid()) @db.Uuid
+  apnsToken  String?  @map("apns_token")
+  createdAt  DateTime @default(now()) @map("created_at")
+  lastSeenAt DateTime @default(now()) @map("last_seen_at")
+
+  @@map("devices")
+}

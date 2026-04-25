@@ -31,18 +31,31 @@ Packages/
 # CocoaPods
 Pods/
 
-# Node.js (бэкенд Самата, если когда-нибудь окажется в этом репо)
+# Node.js (бэкенд)
 node_modules/
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
 .pnpm-debug.log*
 
+# Сборка бэкенда
+api/dist/
+api/.railway/
+
+# Сгенерированный Prisma client (генерится при build)
+api/node_modules/.prisma/
+api/prisma/generated/
+
 # === SECRETS — никогда не коммитим ===
-# Переменные окружения
+# Переменные окружения. Покрываются три формы:
+#   .env, .env.production, .env.local       → старая конвенция
+#   transistor.env, foo.env                 → отдельные env-файлы по сервисам
+# Примеры (только имена переменных, без значений) — единственное исключение.
 .env
 .env.*
+*.env
 !.env.example
+!*.env.example
 
 # Сертификаты, ключи, провижены
 *.p12
