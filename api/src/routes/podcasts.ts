@@ -3,6 +3,7 @@ import { prisma } from "../db.js";
 import { asyncHandler } from "../lib/asyncHandler.js";
 import { podcastToDTO, episodeToDTO } from "../lib/serialize.js";
 import { decodeCursor, encodeCursor, parseLimit } from "../lib/cursor.js";
+import { resolveViewer } from "../middleware/viewer.js";
 
 export const podcastsRouter = Router();
 
@@ -31,6 +32,7 @@ podcastsRouter.get(
 
 podcastsRouter.get(
   "/podcasts/:id/episodes",
+  resolveViewer,
   asyncHandler(async (req, res) => {
     const id = parsePodcastId(asString(req.params.id));
     if (id === null) return res.status(404).json({ error: "not_found" });
@@ -60,7 +62,7 @@ podcastsRouter.get(
     const last = page[page.length - 1];
 
     res.json({
-      items: page.map((e) => episodeToDTO(e, podcast)),
+      items: page.map((e) => episodeToDTO(e, podcast, req.viewer)),
       next_cursor:
         hasMore && last
           ? encodeCursor({ ts: last.pubDate.toISOString(), id: last.id })

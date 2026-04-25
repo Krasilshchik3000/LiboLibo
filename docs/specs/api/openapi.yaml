@@ -106,6 +106,7 @@ paths:
         - $ref: "#/components/parameters/PodcastId"
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/AdaptyProfileId"
       responses:
         "200":
           description: OK
@@ -121,6 +122,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/Limit"
         - $ref: "#/components/parameters/Cursor"
+        - $ref: "#/components/parameters/AdaptyProfileId"
       responses:
         "200":
           description: OK
@@ -136,6 +138,7 @@ paths:
           in: path
           required: true
           schema: { type: string }
+        - $ref: "#/components/parameters/AdaptyProfileId"
       responses:
         "200":
           description: OK
@@ -144,6 +147,65 @@ paths:
               schema: { $ref: "#/components/schemas/Episode" }
         "404":
           $ref: "#/components/responses/NotFound"
+
+  /me/entitlement:
+    get:
+      summary: Текущее состояние премиум-подписки (без обращения к Adapty)
+      description: |
+        Читает кэш из таблицы `entitlements` по `X-Adapty-Profile-Id`. Без
+        заголовка или при отсутствии записи возвращает `is_premium: false`.
+        Используется iOS для дебага и быстрой проверки локального состояния.
+      parameters:
+        - $ref: "#/components/parameters/AdaptyProfileId"
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EntitlementSnapshot" }
+
+  /me/entitlement/refresh:
+    post:
+      summary: Обновить кэш entitlement из Adapty Server API
+      description: |
+        iOS зовёт после `Adapty.makePurchase` или `Adapty.restorePurchases`.
+        Бэк ходит в Adapty с серверным секретом, читает access level (имя
+        задаётся `ADAPTY_PREMIUM_ACCESS_LEVEL`, default `premium`) и
+        апсертит запись в `entitlements`. После этого все последующие
+        запросы `/v1/feed`, `/v1/podcasts/:id/episodes`, `/v1/episodes/:id`
+        с тем же `X-Adapty-Profile-Id` начнут отдавать `audio_url` для
+        премиум-эпизодов.
+
+        Rate limit: не чаще 1 раза в 5 секунд на `profile_id`.
+      parameters:
+        - $ref: "#/components/parameters/AdaptyProfileId"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/EntitlementRefreshResult" }
+        "400":
+          description: Заголовок `X-Adapty-Profile-Id` отсутствует или невалиден
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          description: Слишком частые refresh-запросы для этого `profile_id`
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "503":
+          description: На сервере не настроен `ADAPTY_SECRET_KEY`
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
 
 components:
   parameters:
@@ -168,6 +230,15 @@ components:
       required: false
       schema: { type: string }
       description: Непрозрачный курсор из предыдущего ответа (`next_cursor`).
+    AdaptyProfileId:
+      name: X-Adapty-Profile-Id
+      in: header
+      required: false
+      schema: { type: string, format: uuid }
+      description: |
+        Идентификатор профиля Adapty (UUID). При наличии бэкенд читает
+        кэш entitlement и для премиум-эпизодов возвращает `audio_url` вместо
+        `null`. Без заголовка зритель считается анонимным.
 
   responses:
     NotFound:
@@ -253,6 +324,33 @@ components:
           type: string
           nullable: true
           description: Передать в следующий запрос как `cursor`. `null` — конец.
+
+    EntitlementSnapshot:
+      type: object
+      required: [is_premium]
+      properties:
+        is_premium: { type: boolean }
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+          description: |
+            Истечение премиума по данным локального кэша. `null` —
+            lifetime-подписка или нет записи в кэше.
+
+    EntitlementRefreshResult:
+      type: object
+      required: [is_premium, checked_at]
+      properties:
+        is_premium: { type: boolean }
+        expires_at:
+          type: string
+          format: date-time
+          nullable: true
+        checked_at:
+          type: string
+          format: date-time
+          description: Когда сервер последний раз ходил в Adapty.
 
     Error:
       type: object

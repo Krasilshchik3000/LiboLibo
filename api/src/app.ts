@@ -4,6 +4,7 @@ import { podcastsRouter } from "./routes/podcasts.js";
 import { feedRouter } from "./routes/feed.js";
 import { episodesRouter } from "./routes/episodes.js";
 import { devicesRouter } from "./routes/devices.js";
+import { meRouter } from "./routes/me.js";
 
 export function createApp() {
   const app = express();
@@ -27,6 +28,7 @@ export function createApp() {
   app.use("/v1", feedRouter);
   app.use("/v1", episodesRouter);
   app.use("/v1", devicesRouter);
+  app.use("/v1", meRouter);
 
   // На Railway фид обновляется отдельным Cron Service, который запускает
   // `npm run refresh` (см. docs/specs/step-02-backend.md и api/README.md).

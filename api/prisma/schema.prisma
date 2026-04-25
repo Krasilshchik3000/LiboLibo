@@ -11,23 +11,23 @@ datasource db {
 }
 
 model Podcast {
-  id                BigInt    @id
-  name              String
-  artist            String?
-  feedUrl           String    @unique @map("feed_url")
-  artworkUrl        String?   @map("artwork_url")
-  description       String?
-  genres            String[]
-  hasPremium        Boolean   @default(false) @map("has_premium")
+  id               BigInt    @id
+  name             String
+  artist           String?
+  feedUrl          String    @unique @map("feed_url")
+  artworkUrl       String?   @map("artwork_url")
+  description      String?
+  genres           String[]
+  hasPremium       Boolean   @default(false) @map("has_premium")
   // Дата самого свежего выпуска. По ней клиент делит подкасты на
   // «выходят сейчас / недавно / давно не выходят».
   // Денормализовано: пересчитывается воркером после апсерта эпизодов.
-  lastEpisodeDate   DateTime? @map("last_episode_date")
+  lastEpisodeDate  DateTime? @map("last_episode_date")
   // Transistor.fm show id (resolved from API by feed_url at first refresh).
   // Null → API integration disabled or show not in our account.
-  transistorShowId  String?   @unique @map("transistor_show_id")
-  createdAt         DateTime  @default(now()) @map("created_at")
-  updatedAt         DateTime  @updatedAt @map("updated_at")
+  transistorShowId String?   @unique @map("transistor_show_id")
+  createdAt        DateTime  @default(now()) @map("created_at")
+  updatedAt        DateTime  @updatedAt @map("updated_at")
 
   episodes  Episode[]
   feedFetch FeedFetch?
@@ -71,4 +71,18 @@ model Device {
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
 
   @@map("devices")
+}
+
+// Кэш состояния премиум-подписки на стороне бэкенда. Источник истины — Adapty;
+// эта таблица обновляется ручкой POST /v1/me/entitlement/refresh, которую iOS
+// дёргает после успешной покупки или restore. См. docs/specs/step-2.3-premium-adapty.md.
+model Entitlement {
+  adaptyProfileId String    @id @map("adapty_profile_id")
+  isPremium       Boolean   @default(false) @map("is_premium")
+  expiresAt       DateTime? @map("expires_at")
+  source          String    @default("refresh") @map("source")
+  createdAt       DateTime  @default(now()) @map("created_at")
+  updatedAt       DateTime  @updatedAt @map("updated_at")
+
+  @@map("entitlements")
 }
