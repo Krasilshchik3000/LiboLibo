@@ -1,0 +1,65 @@
+{
+  "identifier" : "191F42A9",
+  "nonRenewingSubscriptions" : [],
+  "products" : [],
+  "settings" : {
+    "_applicationInternalID" : "0",
+    "_compatibilityTimeRate" : 1,
+    "_developerTeamID" : "47B25GR8V2",
+    "_disableDialogs" : false,
+    "_failTransactionsEnabled" : false,
+    "_locale" : "ru_RU",
+    "_storefront" : "USA",
+    "_storeKitErrors" : []
+  },
+  "subscriptionGroups" : [
+    {
+      "id" : "32F7B0B1",
+      "localizations" : [
+        {
+          "description" : "Премиум-доступ к Либо-Либо",
+          "displayName" : "Премиум",
+          "locale" : "ru_RU"
+        },
+        {
+          "description" : "Premium access to Libo-Libo",
+          "displayName" : "Premium",
+          "locale" : "en_US"
+        }
+      ],
+      "name" : "Premium",
+      "subscriptions" : [
+        {
+          "adHocOffers" : [],
+          "codeOffers" : [],
+          "displayPrice" : "0.99",
+          "familyShareable" : false,
+          "groupNumber" : 1,
+          "internalID" : "620A2506",
+          "introductoryOffer" : null,
+          "localizations" : [
+            {
+              "description" : "Бонусные и эксклюзивные выпуски «Либо-Либо».",
+              "displayName" : "Премиум (месяц)",
+              "locale" : "ru_RU"
+            },
+            {
+              "description" : "Bonus and exclusive episodes of Libo-Libo.",
+              "displayName" : "Premium (Monthly)",
+              "locale" : "en_US"
+            }
+          ],
+          "productID" : "monthly_0_99",
+          "recurringSubscriptionPeriod" : "P1M",
+          "referenceName" : "Monthly Premium",
+          "subscriptionGroupID" : "32F7B0B1",
+          "type" : "RecurringSubscription"
+        }
+      ]
+    }
+  ],
+  "version" : {
+    "major" : 4,
+    "minor" : 0
+  }
+}
