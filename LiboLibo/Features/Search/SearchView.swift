@@ -105,7 +105,7 @@ private struct PodcastSearchRow: View {
                 }
             }
             .frame(width: 56, height: 56)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSmall))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(podcast.name)

@@ -34,7 +34,7 @@ struct PodcastDetailView: View {
                         }
                     }
                     .frame(width: 140, height: 140)
-                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                    .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLarge))
 
                     Text(podcast.name)
                         .font(.title2)
@@ -111,7 +111,7 @@ struct PodcastDetailView: View {
         } label: {
             Label(
                 subscriptions.isSubscribed(podcast) ? "Подписан" : "Подписаться",
-                systemImage: subscriptions.isSubscribed(podcast) ? "checkmark" : "plus"
+                systemImage: subscriptions.isSubscribed(podcast) ? "checkmark.circle.fill" : "plus.circle"
             )
             .font(.footnote)
             .fontWeight(.semibold)

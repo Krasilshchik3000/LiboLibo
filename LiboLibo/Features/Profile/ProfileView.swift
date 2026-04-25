@@ -76,7 +76,7 @@ struct ProfileView: View {
                                 }
                             }
                             .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
+                            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSmall))
 
                             Text(podcast.name)
                                 .font(.subheadline)

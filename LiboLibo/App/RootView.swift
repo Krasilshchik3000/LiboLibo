@@ -75,9 +75,9 @@ struct RootView: View {
         .safeAreaInset(edge: .bottom, spacing: 0) {
             if player.currentEpisode != nil {
                 MiniPlayerView()
-                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
+                    .background(.regularMaterial, in: RoundedRectangle(cornerRadius: Theme.radiusMedium))
                     .overlay(
-                        RoundedRectangle(cornerRadius: 14)
+                        RoundedRectangle(cornerRadius: Theme.radiusMedium)
                             .stroke(.separator.opacity(0.3), lineWidth: 0.5)
                     )
                     .padding(.horizontal, 12)

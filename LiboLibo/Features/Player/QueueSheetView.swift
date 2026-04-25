@@ -120,7 +120,7 @@ private struct QueueRow: View {
                 }
             }
             .frame(width: 44, height: 44)
-            .clipShape(RoundedRectangle(cornerRadius: 6))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSmall))
 
             VStack(alignment: .leading, spacing: 2) {
                 Text(episode.podcastName)

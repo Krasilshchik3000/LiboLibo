@@ -17,7 +17,7 @@ struct MiniPlayerView: View {
                     }
                 }
                 .frame(width: 36, height: 36)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSmall))
 
                 VStack(alignment: .leading, spacing: 1) {
                     MarqueeText(

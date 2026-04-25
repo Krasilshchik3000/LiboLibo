@@ -80,7 +80,7 @@ private struct Artwork: View {
         }
         .aspectRatio(1, contentMode: .fit)
         .frame(maxWidth: 300, maxHeight: 300)
-        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLarge))
         .shadow(color: .black.opacity(0.18), radius: 18, y: 8)
         .padding(.horizontal, 32)
     }

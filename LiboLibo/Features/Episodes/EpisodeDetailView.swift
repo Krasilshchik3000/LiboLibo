@@ -39,7 +39,7 @@ struct EpisodeDetailView: View {
                 }
             }
             .frame(width: 110, height: 110)
-            .clipShape(RoundedRectangle(cornerRadius: 14))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMedium))
 
             VStack(alignment: .leading, spacing: 6) {
                 Text(episode.podcastName)
@@ -88,7 +88,7 @@ struct EpisodeDetailView: View {
                 .frame(maxWidth: .infinity, minHeight: 44)
                 .padding(.horizontal, 12)
                 .background {
-                    RoundedRectangle(cornerRadius: 10)
+                    RoundedRectangle(cornerRadius: Theme.radiusMedium)
                         .stroke(Color.secondary.opacity(0.4))
                 }
         }

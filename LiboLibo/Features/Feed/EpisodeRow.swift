@@ -21,7 +21,7 @@ struct EpisodeRow: View {
                 }
             }
             .frame(width: 80, height: 80)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMedium))
 
             VStack(alignment: .leading, spacing: 4) {
                 if showsPodcastName {
