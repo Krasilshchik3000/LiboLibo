@@ -195,6 +195,49 @@ commentsRouter.post(
   }),
 );
 
+commentsRouter.delete(
+  "/comments/:id",
+  resolveViewer,
+  asyncHandler(async (req, res) => {
+    const profileId = req.adaptyProfileId;
+    if (!profileId) {
+      return res.status(401).json({ error: "missing_profile_id" });
+    }
+    const id = req.params.id;
+    if (typeof id !== "string" || id.length === 0) {
+      return res.status(404).json({ error: "comment_not_found" });
+    }
+    const comment = await prisma.comment.findUnique({ where: { id } });
+    if (!comment) {
+      return res.status(404).json({ error: "comment_not_found" });
+    }
+    if (comment.authorAdaptyProfileId !== profileId) {
+      return res.status(403).json({ error: "forbidden" });
+    }
+    await prisma.comment.delete({ where: { id: comment.id } });
+    await audioStorage.delete(comment.audioPath).catch(() => {});
+    return res.status(204).end();
+  }),
+);
+
+commentsRouter.get(
+  "/comments/:id/audio",
+  asyncHandler(async (req, res) => {
+    const id = req.params.id;
+    if (typeof id !== "string" || id.length === 0) {
+      return res.status(404).json({ error: "comment_not_found" });
+    }
+    const comment = await prisma.comment.findUnique({
+      where: { id },
+      select: { id: true, audioPath: true },
+    });
+    if (!comment) {
+      return res.status(404).json({ error: "comment_not_found" });
+    }
+    await audioStorage.stream(comment.audioPath, res);
+  }),
+);
+
 // multer surfaces size-limit failures as MulterError(LIMIT_FILE_SIZE) — keep
 // it a route-scoped error handler so the global handler doesn't return 500.
 const multerErrorHandler: ErrorRequestHandler = (err, _req, res, next) => {
