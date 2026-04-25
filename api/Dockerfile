@@ -4,8 +4,10 @@ FROM node:22-slim
 # С slim'ом всё работает из коробки.
 
 # Prisma нужны системные библиотеки openssl и ca-certificates.
+# ffmpeg нужен Instagram-downloader'у (Phase B): извлечь width/height/duration
+# через ffprobe и сгенерировать thumbnail для рилсов через ffmpeg.
 RUN apt-get update -y \
-  && apt-get install -y --no-install-recommends openssl ca-certificates \
+  && apt-get install -y --no-install-recommends openssl ca-certificates ffmpeg \
   && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app

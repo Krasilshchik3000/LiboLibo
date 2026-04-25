@@ -1,0 +1,29 @@
+<div class="filters">
+  <% for (const f of ["pending","published","hidden","all"]) { %>
+    <a href="/admin/posts?status=<%= f %>" class="<%= f === currentStatus ? 'active' : '' %>"><%= f %> (<%= counts[f] || 0 %>)</a>
+  <% } %>
+</div>
+
+<% if (posts.length === 0) { %>
+  <p>Нет постов в этом фильтре.</p>
+<% } else { %>
+  <div class="grid">
+    <% for (const p of posts) { %>
+      <div class="card">
+        <a href="/admin/posts/<%= p.id %>">
+          <% if (p.thumbnailUrl) { %>
+            <img src="<%= p.thumbnailUrl %>" alt="" style="width:100%;display:block;aspect-ratio:1/1;object-fit:cover;background:#eee" />
+          <% } else { %>
+            <div style="aspect-ratio:1/1;background:#eee;display:flex;align-items:center;justify-content:center;color:#999"><%= p.type %></div>
+          <% } %>
+          <div class="meta">
+            <span class="badge <%= p.status %>"><%= p.status %></span>
+            <span style="margin-left:8px;color:#666"><%= p.type %></span>
+            <span style="float:right;color:#999"><%= new Date(p.igCreatedAt).toLocaleDateString('ru-RU') %></span>
+            <div class="caption"><%= (p.caption || '').slice(0, 120) %></div>
+          </div>
+        </a>
+      </div>
+    <% } %>
+  </div>
+<% } %>

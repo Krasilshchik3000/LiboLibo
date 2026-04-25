@@ -203,14 +203,14 @@ private struct UtilityRow: View {
         HStack(spacing: 12) {
             PillButton(
                 icon: "speedometer",
-                text: PlayerService.formatRate(player.rate),
+                text: player.rate != 1.0 ? PlayerService.formatRate(player.rate) : "",
                 isHighlighted: player.rate != 1.0,
                 tint: tint
             ) { player.cycleSpeed() }
 
             PillButton(
                 icon: "moon.zzz",
-                text: player.sleepTimer.label,
+                text: player.sleepTimer.isActive ? player.sleepTimer.label : "",
                 isHighlighted: player.sleepTimer.isActive,
                 tint: tint
             ) { player.cycleSleepTimer() }
@@ -297,6 +297,10 @@ private struct ControlButton: View {
     }
 }
 
+/// Кнопка состояния в UtilityRow плеера. В дефолтном состоянии — голая иконка
+/// (визуально совпадает с notes/queue/download в той же строке). В активном
+/// состоянии раскрывается в pill с тинтом подкаста и подписью текущего значения
+/// (1.5×, 15м и т.п.) — т.е. pill = «у этой настройки сейчас не дефолт».
 private struct PillButton: View {
     let icon: String
     let text: String
@@ -305,10 +309,19 @@ private struct PillButton: View {
     let action: () -> Void
 
     var body: some View {
-        let highlightedBg = tint?.accent ?? Color.primary.opacity(0.7)
         Button(action: action) {
+            content
+        }
+        .buttonStyle(.plain)
+    }
+
+    @ViewBuilder
+    private var content: some View {
+        if isHighlighted {
+            let highlightedBg = tint?.accent ?? Color.primary.opacity(0.7)
             HStack(spacing: text.isEmpty ? 0 : 6) {
                 Image(systemName: icon)
+                    .font(.title3)
                 if !text.isEmpty {
                     Text(text)
                         .font(.subheadline)
@@ -318,13 +331,15 @@ private struct PillButton: View {
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
             .frame(minHeight: 44)
-            .background(
-                Capsule()
-                    .fill(isHighlighted ? AnyShapeStyle(highlightedBg) : AnyShapeStyle(.thinMaterial))
-            )
-            .foregroundStyle(isHighlighted ? Color.white : .primary)
+            .background(Capsule().fill(highlightedBg))
+            .foregroundStyle(Color.white)
             .contentShape(Capsule())
+        } else {
+            Image(systemName: icon)
+                .font(.title3)
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
         }
-        .buttonStyle(.plain)
     }
 }

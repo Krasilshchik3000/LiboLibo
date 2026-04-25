@@ -59,7 +59,7 @@ struct RootView: View {
             PodcastsView()
         }
         Tab("Моё", systemImage: "person.crop.circle", value: SelectedTab.profile) {
-            ProfileView()
+            ProfileView(onOpenPodcasts: { selectedTab = .podcasts })
         }
         Tab(value: SelectedTab.search, role: .search) {
             SearchView()

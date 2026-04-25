@@ -6,6 +6,11 @@ import { episodesRouter } from "./routes/episodes.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
 import { commentsRouter } from "./routes/comments.js";
+import { legalRouter } from "./routes/legal.js";
+import { mediaRouter } from "./routes/media.js";
+import { feedInstagramRouter } from "./routes/feed-instagram.js";
+import { adminRouter } from "./admin/router.js";
+import { internalRouter } from "./routes/internal.js";
 
 export function createApp() {
   const app = express();
@@ -31,6 +36,23 @@ export function createApp() {
   app.use("/v1", devicesRouter);
   app.use("/v1", meRouter);
   app.use("/v1", commentsRouter);
+  app.use("/v1", feedInstagramRouter);
+
+  // Web-админка модерации Instagram-ленты (Phase 3.C). HTTP Basic Auth,
+  // server-rendered EJS. Креды в env: ADMIN_USER, ADMIN_PASSWORD.
+  app.use("/admin", adminRouter);
+
+  // Internal endpoints (cron-сервис Railway дёргает sync+download через них,
+  // потому что Railway volumes нельзя монтировать в два сервиса; volume на
+  // LiboLibo, фактическую работу тоже делает LiboLibo).
+  app.use("/internal", internalRouter);
+
+  // Раздача Instagram-медиа (Phase 3.B). Файлы лежат на Railway volume.
+  app.use("/media", mediaRouter);
+
+  // Legal pages — served at the root, не под /v1, чтобы URL были короткие
+  // и удобные для App Store / In-App-листинга.
+  app.use(legalRouter);
 
   // На Railway фид обновляется отдельным Cron Service, который запускает
   // `npm run refresh` (см. docs/specs/step-02-backend.md и api/README.md).

@@ -71,7 +71,7 @@ CLAUDE.md                  # ← вы здесь
 После каждой задачи, которая трогает iOS-код, **обязательно**:
 
 1. Собрать: `xcodebuild -project LiboLibo.xcodeproj -scheme LiboLibo -sdk iphonesimulator -destination 'platform=iOS Simulator,name=iPhone 17' -configuration Debug build` — ожидать `** BUILD SUCCEEDED **`.
-2. Установить и запустить в booted-симуляторе: `xcrun simctl install booted <path-to-LiboLibo.app>` + `xcrun simctl launch booted me.libolibo.app`.
+2. Установить и запустить в booted-симуляторе: `xcrun simctl install booted <path-to-LiboLibo.app>` + `xcrun simctl launch booted test.libolibo.ru`.
 3. Закоммитить изменения (включая лог сессии) и сделать `git push`.
 
 Сама просьба сделать что-то и есть просьба собрать и запушить — отдельного подтверждения не требуется. Если задача трогает только `api/` или только документацию — iOS-сборку пропускаем, но коммит и пуш делаем. Если сборка падает — не коммитим, чиним и пересобираем.

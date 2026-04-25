@@ -116,6 +116,43 @@ final class PlayerService {
         seek(to: max(0, currentTime + seconds))
     }
 
+    /// Вставляет выпуск сразу после текущего в очередь. Если выпуск уже есть в
+    /// очереди — перемещает его на позицию «следующий».
+    func playNext(_ episode: Episode) {
+        if episode.id != currentEpisode?.id {
+            feedContext.removeAll { $0.id == episode.id }
+        }
+        guard let current = currentEpisode,
+              let idx = feedContext.firstIndex(where: { $0.id == current.id }) else {
+            feedContext.insert(episode, at: 0)
+            return
+        }
+        feedContext.insert(episode, at: idx + 1)
+    }
+
+    /// Удаляет выпуск из очереди. Текущий эпизод удалить нельзя.
+    func removeFromQueue(_ episode: Episode) {
+        guard episode.id != currentEpisode?.id else { return }
+        feedContext.removeAll { $0.id == episode.id }
+    }
+
+    /// Переставляет выпуски в секции «Далее» (индексы относительно неё).
+    func moveInQueue(fromOffsets: IndexSet, toOffset: Int) {
+        guard let current = currentEpisode,
+              let idx = feedContext.firstIndex(where: { $0.id == current.id }),
+              idx + 1 < feedContext.count else { return }
+        var after = Array(feedContext[(idx + 1)...])
+        after.move(fromOffsets: fromOffsets, toOffset: toOffset)
+        feedContext = Array(feedContext[...idx]) + after
+    }
+
+    /// Заменяет секцию «Далее» целиком. Используется при drag-to-reorder.
+    func setQueueAfter(_ episodes: [Episode]) {
+        guard let current = currentEpisode,
+              let idx = feedContext.firstIndex(where: { $0.id == current.id }) else { return }
+        feedContext = Array(feedContext[...idx]) + episodes
+    }
+
     func seek(to time: TimeInterval) {
         let cm = CMTime(seconds: time, preferredTimescale: 600)
         player.seek(to: cm)

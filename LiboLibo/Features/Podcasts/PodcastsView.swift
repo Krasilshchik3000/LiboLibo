@@ -104,7 +104,7 @@ private struct PodcastListItem: View {
     }
 }
 
-/// Типографика как в `EpisodeRow` (Фид):
+/// Типографика как в `EpisodeListItem` (Фид):
 /// .headline — название, .subheadline — превью описания. Внизу — кнопка
 /// подписки в формате иконки.
 private struct PodcastRow: View {

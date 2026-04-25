@@ -4,6 +4,10 @@ struct QueueSheetView: View {
     @Environment(PlayerService.self) private var player
     @Environment(\.dismiss) private var dismiss
 
+    @State private var localAfterItems: [Episode] = []
+    @State private var draggedID: String? = nil
+    @State private var dragStartIndex: Int? = nil
+
     var body: some View {
         NavigationStack {
             ScrollViewReader { proxy in
@@ -15,6 +19,7 @@ struct QueueSheetView: View {
                 .listStyle(.insetGrouped)
                 .onAppear {
                     proxy.scrollTo("nowPlaying", anchor: .top)
+                    localAfterItems = episodesAfter
                 }
             }
             .navigationTitle("Очередь")
@@ -24,6 +29,10 @@ struct QueueSheetView: View {
                     Button("Готово") { dismiss() }
                 }
             }
+        }
+        .onChange(of: episodesAfter) { _, newItems in
+            guard draggedID == nil else { return }
+            localAfterItems = newItems
         }
     }
 
@@ -73,17 +82,61 @@ struct QueueSheetView: View {
 
     @ViewBuilder
     private var upNextSection: some View {
-        let items = episodesAfter
-        if !items.isEmpty {
+        if !localAfterItems.isEmpty {
             Section("Далее") {
-                ForEach(items) { episode in
-                    Button {
-                        player.play(episode)
-                        dismiss()
-                    } label: {
-                        QueueRow(episode: episode)
+                ForEach(localAfterItems) { episode in
+                    HStack(spacing: 0) {
+                        Button {
+                            player.play(episode)
+                            dismiss()
+                        } label: {
+                            QueueRow(episode: episode)
+                                .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+                        .buttonStyle(.plain)
+
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundStyle(.tertiary)
+                            .font(.body)
+                            .frame(width: 44)
+                            .frame(maxHeight: .infinity)
+                            .contentShape(Rectangle())
+                            .gesture(
+                                DragGesture(minimumDistance: 5, coordinateSpace: .global)
+                                    .onChanged { value in
+                                        guard abs(value.translation.height) > abs(value.translation.width) else { return }
+                                        if draggedID == nil {
+                                            draggedID = episode.id
+                                            dragStartIndex = localAfterItems.firstIndex(where: { $0.id == episode.id })
+                                        }
+                                        guard draggedID == episode.id, let startIdx = dragStartIndex else { return }
+                                        let rowHeight: CGFloat = 52
+                                        let delta = Int((value.translation.height / rowHeight).rounded())
+                                        let newIdx = max(0, min(localAfterItems.count - 1, startIdx + delta))
+                                        guard let currentIdx = localAfterItems.firstIndex(where: { $0.id == episode.id }),
+                                              newIdx != currentIdx else { return }
+                                        withAnimation(.easeInOut(duration: 0.15)) {
+                                            localAfterItems.move(
+                                                fromOffsets: IndexSet(integer: currentIdx),
+                                                toOffset: newIdx > currentIdx ? newIdx + 1 : newIdx
+                                            )
+                                        }
+                                    }
+                                    .onEnded { _ in
+                                        player.setQueueAfter(localAfterItems)
+                                        draggedID = nil
+                                        dragStartIndex = nil
+                                    }
+                            )
                     }
-                    .buttonStyle(.plain)
+                    .opacity(draggedID == episode.id ? 0.5 : 1.0)
+                    .swipeActions(edge: .trailing) {
+                        Button(role: .destructive) {
+                            player.removeFromQueue(episode)
+                        } label: {
+                            Image(systemName: "trash")
+                        }
+                    }
                 }
             }
         }

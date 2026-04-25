@@ -16,6 +16,13 @@ export function isConfigured(): boolean {
   );
 }
 
+// Где хранятся скачанные медиа-файлы (Phase B). На Railway это volume,
+// смонтированный в контейнер по этому пути; локально — может быть
+// обычной папкой. Default подобран под Railway-овый mount path по умолчанию.
+export function getMediaDir(): string {
+  return process.env.MEDIA_DIR ?? "/data/media";
+}
+
 export function readConfig(): InstagramConfig {
   const accessToken = process.env.META_ACCESS_TOKEN;
   const igUserId = process.env.META_IG_USER_ID;
