@@ -87,12 +87,12 @@ commentsRouter.get(
     res.json({
       items: rows.map((c) => ({
         id: c.id,
-        author: { birdName: c.author.displayName },
+        author: { bird_name: c.author.displayName },
         transcript: c.transcript,
-        timecodeSec: c.timecodeSec,
-        durationSec: c.audioDurationSec,
-        audioUrl: `${baseUrl}/v1/comments/${c.id}/audio`,
-        createdAt: c.createdAt.toISOString(),
+        timecode_sec: c.timecodeSec,
+        duration_sec: c.audioDurationSec,
+        audio_url: `${baseUrl}/v1/comments/${c.id}/audio`,
+        created_at: c.createdAt.toISOString(),
       })),
     });
   }),
@@ -142,7 +142,7 @@ commentsRouter.post(
     }
 
     const durationSec = Number.parseInt(
-      String(req.body?.durationSec ?? ""),
+      String(req.body?.duration_sec ?? ""),
       10,
     );
     if (
@@ -154,7 +154,7 @@ commentsRouter.post(
     }
 
     const timecodeSec = Number.parseInt(
-      String(req.body?.timecodeSec ?? ""),
+      String(req.body?.timecode_sec ?? ""),
       10,
     );
     if (!Number.isFinite(timecodeSec) || timecodeSec < 0) {
@@ -185,12 +185,12 @@ commentsRouter.post(
     const baseUrl = `${req.protocol}://${req.get("host")}`;
     return res.status(201).json({
       id: comment.id,
-      author: { birdName: user.displayName },
+      author: { bird_name: user.displayName },
       transcript: comment.transcript,
-      timecodeSec: comment.timecodeSec,
-      durationSec: comment.audioDurationSec,
-      audioUrl: `${baseUrl}/v1/comments/${comment.id}/audio`,
-      createdAt: comment.createdAt.toISOString(),
+      timecode_sec: comment.timecodeSec,
+      duration_sec: comment.audioDurationSec,
+      audio_url: `${baseUrl}/v1/comments/${comment.id}/audio`,
+      created_at: comment.createdAt.toISOString(),
     });
   }),
 );
