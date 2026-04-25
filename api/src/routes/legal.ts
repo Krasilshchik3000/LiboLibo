@@ -11,6 +11,8 @@ export const legalRouter = Router();
 
 const EFFECTIVE_DATE = "25 апреля 2026";
 const CONTACT_EMAIL = "krasilshchik@gmail.com";
+const SUPPORT_EMAIL = "s@samat.me";
+const SUPPORT_ISSUES_URL = "https://github.com/Krasilshchik3000/LiboLibo/issues";
 
 const baseStyles = `
   :root { color-scheme: light dark; }
@@ -186,10 +188,51 @@ const privacyBody = `
 <p>Вопросы по обработке данных: <a href="mailto:${CONTACT_EMAIL}">${CONTACT_EMAIL}</a>.</p>
 `;
 
+const supportBody = `
+<h1>Поддержка</h1>
+<p class="meta">Приложение «Либо-Либо»</p>
+
+<p>
+  Если что-то не работает, есть вопрос или хочется предложить улучшение —
+  напишите нам, мы стараемся отвечать в течение нескольких рабочих дней.
+</p>
+
+<h2>Связаться</h2>
+<ul>
+  <li>Email: <a href="mailto:${SUPPORT_EMAIL}">${SUPPORT_EMAIL}</a></li>
+  <li>Issues на GitHub: <a href="${SUPPORT_ISSUES_URL}">${SUPPORT_ISSUES_URL}</a></li>
+</ul>
+
+<h2>Что приложить к письму</h2>
+<ul>
+  <li>версию iOS и модель устройства;</li>
+  <li>версию приложения (Настройки → О приложении);</li>
+  <li>что произошло и какие шаги к этому привели;</li>
+  <li>скриншот или короткую видеозапись экрана, если есть.</li>
+</ul>
+
+<h2>Подписка</h2>
+<p>
+  Управление подпиской, отмена и возвраты выполняются через App Store:
+  Настройки iOS → Apple ID → Подписки. Возвраты средств — на странице
+  <a href="https://reportaproblem.apple.com">reportaproblem.apple.com</a>.
+</p>
+
+<h2>Документы</h2>
+<ul>
+  <li><a href="/terms">Условия использования</a></li>
+  <li><a href="/privacy">Политика конфиденциальности</a></li>
+</ul>
+`;
+
 legalRouter.get("/terms", (_req, res) => {
   res.type("html").send(page("Условия использования", termsBody));
 });
 
 legalRouter.get("/privacy", (_req, res) => {
   res.type("html").send(page("Политика конфиденциальности", privacyBody));
+});
+
+legalRouter.get("/support", (_req, res) => {
+  res.type("html").send(page("Поддержка", supportBody));
 });
