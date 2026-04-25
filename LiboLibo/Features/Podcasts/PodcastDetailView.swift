@@ -24,46 +24,33 @@ struct PodcastDetailView: View {
 
         List {
             Section {
-                VStack(alignment: .leading, spacing: 16) {
-                    HStack(alignment: .top, spacing: 16) {
-                        AsyncImage(url: podcast.artworkUrl) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            default:
-                                Color.secondary.opacity(0.15)
-                            }
+                VStack(spacing: 14) {
+                    AsyncImage(url: podcast.artworkUrl) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        default:
+                            Color.secondary.opacity(0.15)
                         }
-                        .frame(width: 110, height: 110)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-
-                        VStack(alignment: .leading, spacing: 6) {
-                            Text(podcast.name)
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                        }
-                        Spacer(minLength: 0)
                     }
+                    .frame(width: 140, height: 140)
+                    .clipShape(RoundedRectangle(cornerRadius: 16))
 
-                    Button {
-                        subscriptions.toggle(podcast)
-                    } label: {
-                        Label(
-                            subscriptions.isSubscribed(podcast) ? "Подписан" : "Подписаться",
-                            systemImage: subscriptions.isSubscribed(podcast) ? "checkmark" : "plus"
-                        )
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(tint?.accentForeground ?? .white)
-                    }
-                    .buttonStyle(.borderedProminent)
-                    .tint(subscriptions.isSubscribed(podcast) ? .secondary : accent)
+                    Text(podcast.name)
+                        .font(.title2)
+                        .fontWeight(.semibold)
+                        .multilineTextAlignment(.center)
+
+                    subscribeButton(tint: tint, accent: accent)
 
                     if let desc = channelDescription, !desc.isEmpty {
                         Text(desc)
                             .font(.body)
-                            .padding(.top, 4)
+                            .padding(.top, 6)
+                            .frame(maxWidth: .infinity, alignment: .leading)
                     }
                 }
+                .frame(maxWidth: .infinity)
                 .padding(.vertical, 8)
             }
             .listRowSeparator(.hidden)
@@ -105,7 +92,7 @@ struct PodcastDetailView: View {
         .scrollContentBackground(.hidden)
         .background { TintBackground(tint: tint) }
         .tint(.primary)
-        .navigationTitle(podcast.name)
+        .navigationTitle("")
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Episode.self) { episode in
             EpisodeDetailView(episode: episode)
@@ -114,6 +101,27 @@ struct PodcastDetailView: View {
             colors.ensureTint(for: podcast.id, artworkUrl: podcast.artworkUrl)
             await load()
         }
+    }
+
+    /// Заполненная капсула в брендовом цвете подкаста, текст в контрастном
+    /// `tint.accentForeground`. Шрифт `footnote/semibold`. Без теней.
+    private func subscribeButton(tint: TintColor?, accent: Color) -> some View {
+        Button {
+            subscriptions.toggle(podcast)
+        } label: {
+            Label(
+                subscriptions.isSubscribed(podcast) ? "Подписан" : "Подписаться",
+                systemImage: subscriptions.isSubscribed(podcast) ? "checkmark" : "plus"
+            )
+            .font(.footnote)
+            .fontWeight(.semibold)
+            .padding(.horizontal, 14)
+            .padding(.vertical, 6)
+        }
+        .buttonStyle(.borderedProminent)
+        .tint(subscriptions.isSubscribed(podcast) ? .secondary : accent)
+        .foregroundStyle(tint?.accentForeground ?? .white)
+        .clipShape(Capsule())
     }
 
     private func load() async {
