@@ -6,6 +6,7 @@ struct PodcastDetailView: View {
     @Environment(PlayerService.self) private var player
     @Environment(SubscriptionsService.self) private var subscriptions
     @Environment(DownloadService.self) private var downloads
+    @Environment(PodcastColorService.self) private var colors
 
     @State private var episodes: [Episode] = []
     @State private var channelDescription: String?
@@ -14,6 +15,10 @@ struct PodcastDetailView: View {
     @State private var path = NavigationPath()
 
     var body: some View {
+        let tint = colors.tint(for: podcast.id)
+        let primary = tint?.primaryText ?? .primary
+        let secondary = tint?.secondaryText ?? .secondary
+
         List {
             Section {
                 VStack(alignment: .leading, spacing: 16) {
@@ -33,9 +38,10 @@ struct PodcastDetailView: View {
                             Text(podcast.name)
                                 .font(.title3)
                                 .fontWeight(.semibold)
+                                .foregroundStyle(primary)
                             Text(podcast.artist)
                                 .font(.footnote)
-                                .foregroundStyle(.secondary)
+                                .foregroundStyle(secondary)
                         }
                         Spacer(minLength: 0)
                     }
@@ -55,20 +61,24 @@ struct PodcastDetailView: View {
                     if let desc = channelDescription, !desc.isEmpty {
                         Text(desc)
                             .font(.body)
-                            .foregroundStyle(.primary)
+                            .foregroundStyle(primary)
                             .padding(.top, 4)
                     }
                 }
                 .padding(.vertical, 8)
             }
             .listRowSeparator(.hidden)
+            .listRowBackground(Color.clear)
 
-            Section("Выпуски") {
+            Section {
                 if isLoading && episodes.isEmpty {
-                    HStack { Spacer(); ProgressView(); Spacer() }
+                    HStack { Spacer(); ProgressView().tint(primary); Spacer() }
                         .padding(.vertical, 12)
+                        .listRowBackground(Color.clear)
                 } else if let loadError, episodes.isEmpty {
-                    Text(loadError).foregroundStyle(.secondary)
+                    Text(loadError)
+                        .foregroundStyle(secondary)
+                        .listRowBackground(Color.clear)
                 } else {
                     ForEach(episodes) { episode in
                         EpisodeListItem(
@@ -76,6 +86,8 @@ struct PodcastDetailView: View {
                             onPlay: { player.play(episode) },
                             onShowDetail: { path.append(episode) }
                         )
+                        .listRowBackground(Color.clear)
+                        .foregroundStyle(primary)
                         .swipeActions(edge: .trailing) {
                             Button { downloads.toggle(episode) } label: {
                                 Label("Скачать", systemImage: "icloud.and.arrow.down")
@@ -84,14 +96,21 @@ struct PodcastDetailView: View {
                         }
                     }
                 }
+            } header: {
+                Text("Выпуски")
+                    .foregroundStyle(secondary)
             }
         }
+        .scrollContentBackground(.hidden)
+        .background { TintBackground(tint: tint) }
+        .preferredColorScheme(tint?.preferredColorScheme)
         .navigationTitle(podcast.name)
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Episode.self) { episode in
             EpisodeDetailView(episode: episode)
         }
         .task(id: podcast.id) {
+            colors.ensureTint(for: podcast.id, artworkUrl: podcast.artworkUrl)
             await load()
         }
     }

@@ -25,7 +25,7 @@ struct EpisodeRow: View {
             VStack(alignment: .leading, spacing: 4) {
                 Text(episode.podcastName)
                     .font(.caption)
-                    .foregroundStyle(.secondary)
+                    .foregroundStyle(.liboRed)
 
                 Text(episode.title)
                     .font(.headline)

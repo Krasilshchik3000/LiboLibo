@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PodcastsView: View {
     @Environment(PodcastsRepository.self) private var repository
+    @Environment(PodcastColorService.self) private var colors
 
     var body: some View {
         NavigationStack {
@@ -32,6 +33,11 @@ struct PodcastsView: View {
             .navigationTitle("Подкасты")
             .navigationDestination(for: Podcast.self) { podcast in
                 PodcastDetailView(podcast: podcast)
+            }
+        }
+        .task(id: repository.podcasts.count) {
+            for podcast in repository.podcasts {
+                colors.ensureTint(for: podcast.id, artworkUrl: podcast.artworkUrl)
             }
         }
     }
