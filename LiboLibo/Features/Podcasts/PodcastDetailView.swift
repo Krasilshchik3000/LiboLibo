@@ -16,8 +16,7 @@ struct PodcastDetailView: View {
 
     var body: some View {
         let tint = colors.tint(for: podcast.id)
-        let primary = tint?.primaryText ?? .primary
-        let secondary = tint?.secondaryText ?? .secondary
+        let accent = tint?.accent ?? .liboRed
 
         List {
             Section {
@@ -38,10 +37,9 @@ struct PodcastDetailView: View {
                             Text(podcast.name)
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(primary)
                             Text(podcast.artist)
                                 .font(.footnote)
-                                .foregroundStyle(secondary)
+                                .foregroundStyle(.secondary)
                         }
                         Spacer(minLength: 0)
                     }
@@ -56,12 +54,11 @@ struct PodcastDetailView: View {
                         .frame(maxWidth: .infinity, minHeight: 44)
                     }
                     .buttonStyle(.borderedProminent)
-                    .tint(subscriptions.isSubscribed(podcast) ? .secondary : .liboRed)
+                    .tint(subscriptions.isSubscribed(podcast) ? .secondary : accent)
 
                     if let desc = channelDescription, !desc.isEmpty {
                         Text(desc)
                             .font(.body)
-                            .foregroundStyle(primary)
                             .padding(.top, 4)
                     }
                 }
@@ -72,12 +69,12 @@ struct PodcastDetailView: View {
 
             Section {
                 if isLoading && episodes.isEmpty {
-                    HStack { Spacer(); ProgressView().tint(primary); Spacer() }
+                    HStack { Spacer(); ProgressView(); Spacer() }
                         .padding(.vertical, 12)
                         .listRowBackground(Color.clear)
                 } else if let loadError, episodes.isEmpty {
                     Text(loadError)
-                        .foregroundStyle(secondary)
+                        .foregroundStyle(.secondary)
                         .listRowBackground(Color.clear)
                 } else {
                     ForEach(episodes) { episode in
@@ -87,23 +84,20 @@ struct PodcastDetailView: View {
                             onShowDetail: { path.append(episode) }
                         )
                         .listRowBackground(Color.clear)
-                        .foregroundStyle(primary)
                         .swipeActions(edge: .trailing) {
                             Button { downloads.toggle(episode) } label: {
                                 Label("Скачать", systemImage: "icloud.and.arrow.down")
                             }
-                            .tint(.liboRed)
+                            .tint(accent)
                         }
                     }
                 }
             } header: {
                 Text("Выпуски")
-                    .foregroundStyle(secondary)
             }
         }
         .scrollContentBackground(.hidden)
         .background { TintBackground(tint: tint) }
-        .preferredColorScheme(tint?.preferredColorScheme)
         .navigationTitle(podcast.name)
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Episode.self) { episode in
@@ -116,13 +110,17 @@ struct PodcastDetailView: View {
     }
 
     private func load() async {
+        // Описание подкаста теперь приходит из API (поле `Podcast.description`)
+        // вместе с самим подкастом — отдельный поход в RSS больше не нужен.
+        channelDescription = podcast.description
+
         isLoading = true
         defer { isLoading = false }
-        if let feed = await PodcastsRepository.fetchFeed(for: podcast) {
-            channelDescription = feed.channel.description
-            episodes = feed.episodes.sorted { $0.pubDate > $1.pubDate }
+        do {
+            let fetched = try await APIClient.shared.fetchEpisodes(podcastId: podcast.id, limit: 200)
+            episodes = fetched.episodes
             loadError = nil
-        } else {
+        } catch {
             loadError = "Не удалось загрузить выпуски."
         }
     }

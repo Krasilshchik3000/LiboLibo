@@ -11,7 +11,7 @@ struct TintBackground: View {
         Group {
             if let tint {
                 LinearGradient(
-                    colors: [tint.color, tint.darker],
+                    colors: [tint.background, tint.backgroundDeep],
                     startPoint: .top,
                     endPoint: .bottom
                 )

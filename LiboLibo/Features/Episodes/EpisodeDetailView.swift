@@ -13,14 +13,13 @@ struct EpisodeDetailView: View {
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
-                actions
+                actions(tint: tint)
                 description
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background { TintBackground(tint: tint) }
-        .preferredColorScheme(tint?.preferredColorScheme)
         .navigationTitle("Выпуск")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: episode.podcastId) {
@@ -62,20 +61,34 @@ struct EpisodeDetailView: View {
         }
     }
 
-    private var actions: some View {
-        HStack(spacing: 12) {
-            Button {
-                player.play(episode)
-            } label: {
-                Label("Слушать", systemImage: "play.fill")
-                    .frame(maxWidth: .infinity, minHeight: 44)
-            }
-            .buttonStyle(.borderedProminent)
-            .tint(.liboRed)
+    @ViewBuilder
+    private func actions(tint: TintColor?) -> some View {
+        if episode.isPlayable {
+            HStack(spacing: 12) {
+                Button {
+                    player.play(episode)
+                } label: {
+                    Label("Слушать", systemImage: "play.fill")
+                        .frame(maxWidth: .infinity, minHeight: 44)
+                }
+                .buttonStyle(.borderedProminent)
+                .tint(tint?.accent ?? .accentColor)
 
-            DownloadButton(episode: episode, style: .button)
-                .buttonStyle(.bordered)
-                .frame(maxWidth: .infinity)
+                DownloadButton(episode: episode, style: .button)
+                    .buttonStyle(.bordered)
+                    .frame(maxWidth: .infinity)
+            }
+        } else {
+            // Премиум-эпизод без активного entitlement: тизер.
+            Label("Доступно по подписке", systemImage: "lock.fill")
+                .font(.subheadline)
+                .foregroundStyle(.secondary)
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .padding(.horizontal, 12)
+                .background {
+                    RoundedRectangle(cornerRadius: 10)
+                        .stroke(Color.secondary.opacity(0.4))
+                }
         }
     }
 

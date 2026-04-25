@@ -29,13 +29,16 @@ final class HistoryService {
     }
 
     func record(_ episode: Episode) {
+        // В историю попадают только реально проигрываемые выпуски — у них
+        // всегда есть audioUrl. Премиум без entitlement сюда дойти не может.
+        guard let audioUrl = episode.audioUrl else { return }
         let item = Item(
             id: episode.id,
             title: episode.title,
             podcastId: episode.podcastId,
             podcastName: episode.podcastName,
             podcastArtworkUrl: episode.podcastArtworkUrl,
-            audioUrl: episode.audioUrl,
+            audioUrl: audioUrl,
             lastPlayedAt: Date()
         )
         items.removeAll { $0.id == item.id }

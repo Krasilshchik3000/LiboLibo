@@ -106,10 +106,6 @@ private struct PodcastRow: View {
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(podcast.artist)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-
                 Text(podcast.name)
                     .font(.headline)
                     .foregroundStyle(.primary)

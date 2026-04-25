@@ -109,33 +109,32 @@ final class PodcastColorService {
     }
 }
 
-/// RGB-цвет обложки в диапазоне 0…1 + помощники для подбора контрастного шрифта.
+/// «Цветной паспорт» подкаста: насыщенный исходный цвет (для кнопок-акцентов)
+/// плюс его смягчённые версии для фона. Идея — тонкая пастельная подложка,
+/// которая узнаётся по подкасту, но не давит на текст.
 struct TintColor: Sendable, Hashable {
     let r: Double
     let g: Double
     let b: Double
 
-    var color: Color { Color(red: r, green: g, blue: b) }
+    /// Исходный «живой» цвет — для акцентов: кнопки, активные пилюли, swipe-actions.
+    var accent: Color { Color(red: r, green: g, blue: b) }
 
-    var luminance: Double { 0.299 * r + 0.587 * g + 0.114 * b }
-
-    /// true — фон светлый, текст должен быть тёмным.
-    var prefersDarkText: Bool { luminance > 0.6 }
-
-    var primaryText: Color {
-        prefersDarkText ? Color.black.opacity(0.88) : Color.white
+    /// Верхний цвет фона: пастель, 25% обложки + 75% тёплой бумаги.
+    var background: Color {
+        mix(toward: 0.96, 0.95, 0.92, ratio: 0.75)
     }
 
-    var secondaryText: Color {
-        prefersDarkText ? Color.black.opacity(0.6) : Color.white.opacity(0.72)
+    /// Нижний цвет фона: чуть глубже, для лёгкого вертикального градиента.
+    var backgroundDeep: Color {
+        mix(toward: 0.88, 0.86, 0.83, ratio: 0.70)
     }
 
-    var preferredColorScheme: ColorScheme {
-        prefersDarkText ? .light : .dark
-    }
-
-    /// Слегка затемнённая версия — для нижней части градиентного фона.
-    var darker: Color {
-        Color(red: r * 0.78, green: g * 0.78, blue: b * 0.78)
+    private func mix(toward tr: Double, _ tg: Double, _ tb: Double, ratio: Double) -> Color {
+        Color(
+            red:   r * (1 - ratio) + tr * ratio,
+            green: g * (1 - ratio) + tg * ratio,
+            blue:  b * (1 - ratio) + tb * ratio
+        )
     }
 }
