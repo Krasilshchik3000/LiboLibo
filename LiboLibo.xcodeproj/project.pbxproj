@@ -18,8 +18,6 @@
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		C49B7815EC13F05F2FEBA9E5 /* LiboLibo */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = LiboLibo;
 			sourceTree = "<group>";
 		};
@@ -142,7 +140,7 @@
 		6E04F613EEC1CF3DA989E6DF /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ADAPTY_PUBLIC_SDK_KEY = "public_live_rj0kCiWl.y24PVWRN42JhQlvSHcea";
+				ADAPTY_PUBLIC_SDK_KEY = public_live_rj0kCiWl.y24PVWRN42JhQlvSHcea;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGNING_ALLOWED = NO;
 				CODE_SIGN_STYLE = Automatic;
@@ -292,7 +290,7 @@
 		E3F124E52D6F454A08525EE6 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
-				ADAPTY_PUBLIC_SDK_KEY = "public_live_rj0kCiWl.y24PVWRN42JhQlvSHcea";
+				ADAPTY_PUBLIC_SDK_KEY = public_live_rj0kCiWl.y24PVWRN42JhQlvSHcea;
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
