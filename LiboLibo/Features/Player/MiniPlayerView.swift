@@ -1,5 +1,8 @@
 import SwiftUI
 
+/// Содержимое мини-плеера: обложка, два текстовых ряда и контролы.
+/// Без собственного фона — на iOS 26 хост (`tabViewBottomAccessory`)
+/// предоставляет liquid-glass подложку, на iOS ≤ 25 фон применяет `RootView`.
 struct MiniPlayerView: View {
     @Environment(PlayerService.self) private var player
 
@@ -14,10 +17,10 @@ struct MiniPlayerView: View {
                         Color.secondary.opacity(0.15)
                     }
                 }
-                .frame(width: 44, height: 44)
-                .clipShape(RoundedRectangle(cornerRadius: 8))
+                .frame(width: 36, height: 36)
+                .clipShape(RoundedRectangle(cornerRadius: 6))
 
-                VStack(alignment: .leading, spacing: 2) {
+                VStack(alignment: .leading, spacing: 1) {
                     Text(episode.title)
                         .font(.subheadline)
                         .fontWeight(.semibold)
@@ -42,17 +45,12 @@ struct MiniPlayerView: View {
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
-                        .frame(width: 32, height: 32)
+                        .frame(width: 28, height: 28)
                 }
                 .buttonStyle(.plain)
             }
             .padding(.horizontal, 12)
-            .padding(.vertical, 8)
-            .background(.regularMaterial, in: RoundedRectangle(cornerRadius: 14))
-            .overlay(
-                RoundedRectangle(cornerRadius: 14)
-                    .stroke(.separator.opacity(0.3), lineWidth: 0.5)
-            )
+            .padding(.vertical, 6)
         }
     }
 }

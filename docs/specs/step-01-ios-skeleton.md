@@ -15,6 +15,7 @@
 | **1.1** | **Браузить:** Фид + Подкасты с реальным RSS — список выпусков всех 44 подкастов, сетка обложек, экран подкаста | ✅ [session 04](../sessions/2026-04-25-04-step-1.1.md) |
 | **1.2** | **Слушать:** AVPlayer, mini-player + полноэкранный, ±10 / play/pause / скорость, background audio + lock screen controls | ✅ [session 05](../sessions/2026-04-25-05-step-1.2.md) |
 | **1.3** | **Сохранять и шлифовать:** подписки (UserDefaults), профиль с подписками / свежим / историей, тёмная тема и dynamic type из коробки | ✅ [session 06](../sessions/2026-04-25-06-step-1.3.md) |
+| **1.4** | **UX-фиксы и поиск:** mini-player на iOS 26 `tabViewBottomAccessory` + `tabBarMinimizeBehavior(.onScrollDown)`, выравнивание сетки подкастов (`reservesSpace`), новый таб «Поиск» с объектным результатом (Подкасты / Выпуски) | ✅ [session 07](../sessions/2026-04-25-07-step-1.4.md) |
 
 **Шаг 1 закрыт.** Дальше — шаг 2 (бэкенд Самата, push-уведомления, оффлайн).
 

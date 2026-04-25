@@ -3,12 +3,12 @@ import SwiftUI
 struct PodcastsView: View {
     @Environment(PodcastsRepository.self) private var repository
 
-    private let columns = [GridItem(.adaptive(minimum: 110), spacing: 12)]
+    private let columns = [GridItem(.adaptive(minimum: 110), spacing: 12, alignment: .top)]
 
     var body: some View {
         NavigationStack {
             ScrollView {
-                LazyVGrid(columns: columns, spacing: 16) {
+                LazyVGrid(columns: columns, alignment: .leading, spacing: 16) {
                     ForEach(repository.podcasts) { podcast in
                         NavigationLink(value: podcast) {
                             PodcastTile(podcast: podcast)
@@ -44,8 +44,9 @@ private struct PodcastTile: View {
 
             Text(podcast.name)
                 .font(.subheadline)
-                .lineLimit(2)
+                .lineLimit(2, reservesSpace: true)
                 .foregroundStyle(.primary)
+                .frame(maxWidth: .infinity, alignment: .leading)
         }
     }
 }
