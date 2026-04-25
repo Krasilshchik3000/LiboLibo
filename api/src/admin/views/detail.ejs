@@ -1,0 +1,66 @@
+<p><a href="/admin/posts">← к списку</a></p>
+
+<div class="detail">
+  <h2>Пост <small style="color:#999;font-weight:400;font-family:monospace"><%= post.igMediaId %></small></h2>
+  <p>
+    <span class="badge <%= post.status %>"><%= post.status %></span>
+    <%= post.type %> ·
+    <%= new Date(post.igCreatedAt).toLocaleString('ru-RU') %> ·
+    <a href="<%= post.igPermalink %>" target="_blank" rel="noopener">открыть в Instagram ↗</a>
+  </p>
+
+  <div style="display:flex;gap:16px;flex-wrap:wrap">
+    <% for (const m of media) { %>
+      <% if (m.kind === 'IMAGE') { %>
+        <img src="<%= m.url %>" style="max-width:240px;max-height:240px;background:#eee" />
+      <% } else { %>
+        <video src="<%= m.url %>" poster="<%= m.thumbnailUrl %>" controls style="max-width:240px;max-height:320px;background:#000"></video>
+      <% } %>
+    <% } %>
+    <% if (media.length === 0) { %>
+      <p style="color:#999">Медиа ещё не скачаны (Phase B downloader пока не отработал).</p>
+    <% } %>
+  </div>
+
+  <% if (post.caption) { %>
+    <p>Caption:</p>
+    <div class="caption"><%= post.caption %></div>
+  <% } %>
+
+  <form method="POST" action="/admin/posts/<%= post.id %>">
+    <fieldset>
+      <legend>CTA</legend>
+      <label><input type="radio" name="cta_type" value="none"     <%= !post.ctaType ? 'checked' : '' %>>          без CTA</label>
+      <label><input type="radio" name="cta_type" value="episode"  <%= post.ctaType === 'EPISODE' ? 'checked' : '' %>>  Эпизод</label>
+      <label><input type="radio" name="cta_type" value="podcast"  <%= post.ctaType === 'PODCAST' ? 'checked' : '' %>>  Подкаст</label>
+      <label><input type="radio" name="cta_type" value="link"     <%= post.ctaType === 'LINK' ? 'checked' : '' %>>     Внешняя ссылка</label>
+
+      <label>Эпизод (id):
+        <select name="cta_episode_id">
+          <option value="">— не выбран —</option>
+          <% for (const e of episodes) { %>
+            <option value="<%= e.id %>" <%= post.ctaEpisodeId === e.id ? 'selected' : '' %>><%= e.title.slice(0, 80) %></option>
+          <% } %>
+        </select>
+      </label>
+
+      <label>Подкаст:
+        <select name="cta_podcast_id">
+          <option value="">— не выбран —</option>
+          <% for (const p of podcasts) { %>
+            <option value="<%= p.id %>" <%= post.ctaPodcastId === p.id ? 'selected' : '' %>><%= p.name %></option>
+          <% } %>
+        </select>
+      </label>
+
+      <label>URL: <input type="url" name="cta_url" value="<%= post.ctaUrl || '' %>" placeholder="https://..."></label>
+      <label>Подпись кнопки: <input type="text" name="cta_label" maxlength="80" value="<%= post.ctaLabel || '' %>" placeholder="Слушать эпизод"></label>
+    </fieldset>
+
+    <div class="actions">
+      <button type="submit" name="action" value="publish" class="publish">Опубликовать</button>
+      <button type="submit" name="action" value="save_draft" class="save">Сохранить черновик</button>
+      <button type="submit" name="action" value="hide" class="hide">Скрыть</button>
+    </div>
+  </form>
+</div>

@@ -21,10 +21,14 @@
   },
   "dependencies": {
     "@prisma/client": "^5.22.0",
+    "basic-auth": "^2.0.1",
+    "ejs": "^5.0.2",
     "express": "^4.21.1",
     "fast-xml-parser": "^4.5.0"
   },
   "devDependencies": {
+    "@types/basic-auth": "^1.1.8",
+    "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.0",
     "@types/node": "^22.9.0",
     "prisma": "^5.22.0",
