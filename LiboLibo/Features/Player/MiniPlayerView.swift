@@ -23,11 +23,9 @@ struct MiniPlayerView: View {
                     Text(episode.title)
                         .font(.subheadline)
                         .fontWeight(.medium)
-                        .lineLimit(1)
                     Text(episode.podcastName)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                        .lineLimit(1)
                 }
                 Spacer(minLength: 0)
 

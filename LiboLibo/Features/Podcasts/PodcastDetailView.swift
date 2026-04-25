@@ -33,7 +33,6 @@ struct PodcastDetailView: View {
                             Text(podcast.name)
                                 .font(.title3)
                                 .fontWeight(.semibold)
-                                .lineLimit(3)
                             Text(podcast.artist)
                                 .font(.footnote)
                                 .foregroundStyle(.secondary)

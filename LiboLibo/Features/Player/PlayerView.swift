@@ -10,87 +10,82 @@ struct PlayerView: View {
             ZStack {
                 BlurredBackdrop(url: episode.podcastArtworkUrl)
 
-                GeometryReader { geo in
-                    VStack(spacing: 20) {
-                        AsyncImage(url: episode.podcastArtworkUrl) { phase in
-                            switch phase {
-                            case .success(let image):
-                                image.resizable().aspectRatio(contentMode: .fill)
-                            default:
-                                Color.white.opacity(0.1)
-                            }
+                VStack(spacing: 20) {
+                    AsyncImage(url: episode.podcastArtworkUrl) { phase in
+                        switch phase {
+                        case .success(let image):
+                            image.resizable().aspectRatio(contentMode: .fill)
+                        default:
+                            Color.white.opacity(0.1)
                         }
-                        .aspectRatio(1, contentMode: .fit)
-                        .frame(width: min(geo.size.width - 64, 360))
-                        .clipShape(RoundedRectangle(cornerRadius: 20))
-                        .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-                        .padding(.top, 24)
-
-                        VStack(spacing: 6) {
-                            Text(episode.podcastName)
-                                .font(.subheadline)
-                                .foregroundStyle(.white.opacity(0.8))
-                                .lineLimit(1)
-                            Text(episode.title)
-                                .font(.title3)
-                                .fontWeight(.semibold)
-                                .foregroundStyle(.white)
-                                .multilineTextAlignment(.center)
-                                .lineLimit(3)
-                        }
-                        .padding(.horizontal, 24)
-
-                        ProgressSlider()
-                            .padding(.horizontal, 24)
-
-                        HStack(spacing: 44) {
-                            ControlButton(systemImage: "gobackward.10", size: 32) { player.skip(by: -10) }
-
-                            Button {
-                                player.togglePlayPause()
-                            } label: {
-                                Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                    .font(.system(size: 72))
-                                    .foregroundStyle(.white)
-                            }
-                            .buttonStyle(.plain)
-
-                            ControlButton(systemImage: "goforward.10", size: 32) { player.skip(by: 10) }
-                        }
-
-                        HStack(spacing: 12) {
-                            PillButton(
-                                icon: "speedometer",
-                                text: PlayerService.formatRate(player.rate),
-                                isHighlighted: player.rate != 1.0
-                            ) { player.cycleSpeed() }
-
-                            PillButton(
-                                icon: "moon.zzz",
-                                text: player.sleepTimer.label,
-                                isHighlighted: player.sleepTimer.isActive
-                            ) { player.cycleSleepTimer() }
-
-                            DownloadButton(episode: episode, idleTint: .white)
-
-                            Button {
-                                showsNotes = true
-                            } label: {
-                                Image(systemName: "doc.text")
-                                    .font(.title3)
-                                    .foregroundStyle(.white)
-                                    .frame(width: 44, height: 44)
-                                    .contentShape(Rectangle())
-                            }
-                            .buttonStyle(.plain)
-                            .accessibilityLabel("Описание выпуска")
-                        }
-
-                        Spacer(minLength: 0)
                     }
-                    .frame(maxWidth: .infinity)
+                    .aspectRatio(1, contentMode: .fit)
+                    .clipShape(RoundedRectangle(cornerRadius: 20))
+                    .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+                    .padding(.horizontal, 40)
+                    .padding(.top, 24)
+
+                    VStack(spacing: 6) {
+                        Text(episode.podcastName)
+                            .font(.subheadline)
+                            .foregroundStyle(.white.opacity(0.8))
+                        Text(episode.title)
+                            .font(.title3)
+                            .fontWeight(.semibold)
+                            .foregroundStyle(.white)
+                            .multilineTextAlignment(.center)
+                    }
+                    .padding(.horizontal, 24)
+
+                    ProgressSlider()
+                        .padding(.horizontal, 32)
+
+                    HStack(spacing: 44) {
+                        ControlButton(systemImage: "gobackward.10", size: 32) { player.skip(by: -10) }
+
+                        Button {
+                            player.togglePlayPause()
+                        } label: {
+                            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                                .font(.system(size: 72))
+                                .foregroundStyle(.white)
+                        }
+                        .buttonStyle(.plain)
+
+                        ControlButton(systemImage: "goforward.10", size: 32) { player.skip(by: 10) }
+                    }
+
+                    HStack(spacing: 12) {
+                        PillButton(
+                            icon: "speedometer",
+                            text: PlayerService.formatRate(player.rate),
+                            isHighlighted: player.rate != 1.0
+                        ) { player.cycleSpeed() }
+
+                        PillButton(
+                            icon: "moon.zzz",
+                            text: player.sleepTimer.label,
+                            isHighlighted: player.sleepTimer.isActive
+                        ) { player.cycleSleepTimer() }
+
+                        DownloadButton(episode: episode, idleTint: .white)
+                            .frame(minWidth: 44, minHeight: 44)
+
+                        Button {
+                            showsNotes = true
+                        } label: {
+                            Image(systemName: "doc.text")
+                                .font(.title3)
+                                .foregroundStyle(.white)
+                                .frame(width: 44, height: 44)
+                                .contentShape(Rectangle())
+                        }
+                        .buttonStyle(.plain)
+                        .accessibilityLabel("Описание выпуска")
+                    }
+
+                    Spacer(minLength: 16)
                 }
-                .ignoresSafeArea(edges: [])
             }
             .preferredColorScheme(.dark)
             .sheet(isPresented: $showsNotes) {

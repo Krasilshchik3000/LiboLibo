@@ -41,7 +41,6 @@ struct EpisodeDetailView: View {
                 Text(episode.title)
                     .font(.title3)
                     .fontWeight(.semibold)
-                    .lineLimit(4)
                 HStack(spacing: 6) {
                     Text(episode.pubDate, style: .date)
                     if let dur = episode.duration {

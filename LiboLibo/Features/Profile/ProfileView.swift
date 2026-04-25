@@ -8,6 +8,7 @@ struct ProfileView: View {
     @Environment(PlayerService.self) private var player
 
     @State private var path = NavigationPath()
+    @State private var showsClearHistoryAlert = false
 
     private var subscribedPodcasts: [Podcast] {
         repository.podcasts.filter { subscriptions.isSubscribed($0) }
@@ -45,6 +46,14 @@ struct ProfileView: View {
             .navigationTitle("Моё")
             .navigationDestination(for: Podcast.self) { PodcastDetailView(podcast: $0) }
             .navigationDestination(for: Episode.self) { EpisodeDetailView(episode: $0) }
+            .alert("Очистить историю?", isPresented: $showsClearHistoryAlert) {
+                Button("Очистить", role: .destructive) {
+                    history.clearAll()
+                }
+                Button("Отмена", role: .cancel) {}
+            } message: {
+                Text("Список прослушанных выпусков будет удалён.")
+            }
         }
     }
 
@@ -71,7 +80,6 @@ struct ProfileView: View {
 
                             Text(podcast.name)
                                 .font(.subheadline)
-                                .lineLimit(2)
                         }
                     }
                 }
@@ -112,7 +120,7 @@ struct ProfileView: View {
     }
 
     private var historySection: some View {
-        Section("История") {
+        Section {
             ForEach(history.items) { item in
                 let episode = history.episode(for: item)
                 EpisodeListItem(
@@ -120,6 +128,19 @@ struct ProfileView: View {
                     onPlay: { player.play(episode) },
                     onShowDetail: { path.append(episode) }
                 )
+            }
+        } header: {
+            HStack {
+                Text("История")
+                Spacer()
+                Button {
+                    showsClearHistoryAlert = true
+                } label: {
+                    Text("Очистить")
+                        .font(.footnote)
+                        .foregroundStyle(.liboRed)
+                }
+                .buttonStyle(.plain)
             }
         }
     }

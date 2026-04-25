@@ -32,19 +32,17 @@ struct DownloadButton: View {
         switch status {
         case .notDownloaded:
             Image(systemName: "icloud.and.arrow.down")
-                .font(.title3)
                 .foregroundStyle(idleTint)
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 28, minHeight: 28)
                 .contentShape(Rectangle())
         case .downloading:
             ProgressView()
                 .controlSize(.small)
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 28, minHeight: 28)
         case .downloaded:
             Image(systemName: "checkmark.circle.fill")
-                .font(.title3)
                 .foregroundStyle(.liboRed)
-                .frame(width: 44, height: 44)
+                .frame(minWidth: 28, minHeight: 28)
                 .contentShape(Rectangle())
         }
     }

@@ -111,7 +111,6 @@ private struct PodcastSearchRow: View {
                 Text(podcast.name)
                     .font(.subheadline)
                     .fontWeight(.medium)
-                    .lineLimit(2)
                 Text(podcast.artist)
                     .font(.caption)
                     .foregroundStyle(.secondary)

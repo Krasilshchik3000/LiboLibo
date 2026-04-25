@@ -39,11 +39,9 @@ private struct PodcastRow: View {
                 Text(podcast.name)
                     .font(.subheadline)
                     .fontWeight(.semibold)
-                    .lineLimit(2)
                 Text(podcast.artist)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
             }
             Spacer(minLength: 0)
         }

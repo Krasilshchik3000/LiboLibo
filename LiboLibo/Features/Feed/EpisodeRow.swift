@@ -1,12 +1,10 @@
 import SwiftUI
 
 /// Карточка выпуска в стиле Apple Podcasts: крупная обложка слева, заголовок —
-/// `.headline`, превью описания — `.subheadline` (.secondary), внизу — кнопка-капсула
-/// «Слушать» с длительностью и датой.
+/// `.headline`, превью описания — `.subheadline` (.secondary), внизу — иконка
+/// загрузки и метаданные (дата · длительность).
 ///
-/// Сама строка — без обёрток в NavigationLink/Button: тапы вешает родитель
-/// (FeedView и др.), чтобы каждый список мог решить, что делать тап в основной зоне
-/// (играть) и тап в info-кнопке (детали).
+/// Тексты НЕ обрезаются — показываем полностью.
 struct EpisodeRow: View {
     let episode: Episode
     var showsPreview: Bool = true
@@ -28,12 +26,10 @@ struct EpisodeRow: View {
                 Text(episode.podcastName)
                     .font(.caption)
                     .foregroundStyle(.secondary)
-                    .lineLimit(1)
 
                 Text(episode.title)
                     .font(.headline)
                     .foregroundStyle(.primary)
-                    .lineLimit(2)
 
                 if showsPreview {
                     let preview = episode.summary.firstSentences(maxCount: 2)
@@ -41,15 +37,13 @@ struct EpisodeRow: View {
                         Text(preview)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
-                            .lineLimit(2)
                             .padding(.top, 2)
                     }
                 }
 
                 HStack(spacing: 8) {
-                    Image(systemName: "play.circle.fill")
-                        .font(.title2)
-                        .foregroundStyle(.liboRed)
+                    DownloadButton(episode: episode, style: .icon)
+                        .frame(width: 28, height: 28, alignment: .leading)
 
                     Text(metadataLine)
                         .font(.footnote)

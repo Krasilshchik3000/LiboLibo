@@ -46,6 +46,12 @@ final class HistoryService {
         save()
     }
 
+    /// Очищает всю историю прослушиваний.
+    func clearAll() {
+        items = []
+        UserDefaults.standard.removeObject(forKey: Self.key)
+    }
+
     /// Для обратной конвертации из истории в Episode — чтобы можно было снова запустить.
     func episode(for item: Item) -> Episode {
         Episode(
