@@ -48,7 +48,7 @@ struct MiniPlayerView: View {
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
-                        .foregroundStyle(.liboRed)
+                        .foregroundStyle(.primary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }

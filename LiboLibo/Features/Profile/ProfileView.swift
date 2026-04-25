@@ -138,14 +138,12 @@ struct ProfileView: View {
             HStack {
                 Text("История")
                 Spacer()
-                Button {
+                Button(role: .destructive) {
                     showsClearHistoryAlert = true
                 } label: {
                     Text("Очистить")
                         .font(.footnote)
-                        .foregroundStyle(.liboRed)
                 }
-                .buttonStyle(.plain)
             }
         }
     }
