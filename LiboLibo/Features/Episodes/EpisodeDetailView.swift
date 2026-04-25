@@ -20,6 +20,7 @@ struct EpisodeDetailView: View {
             .frame(maxWidth: .infinity, alignment: .leading)
         }
         .background { TintBackground(tint: tint) }
+        .tint(.primary)
         .navigationTitle("Выпуск")
         .navigationBarTitleDisplayMode(.inline)
         .task(id: episode.podcastId) {

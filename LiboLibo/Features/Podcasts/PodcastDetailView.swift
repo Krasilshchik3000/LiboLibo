@@ -98,6 +98,7 @@ struct PodcastDetailView: View {
         }
         .scrollContentBackground(.hidden)
         .background { TintBackground(tint: tint) }
+        .tint(.primary)
         .navigationTitle(podcast.name)
         .navigationBarTitleDisplayMode(.inline)
         .navigationDestination(for: Episode.self) { episode in

@@ -19,14 +19,11 @@ struct MiniPlayerView: View {
                 .frame(width: 36, height: 36)
                 .clipShape(RoundedRectangle(cornerRadius: 6))
 
-                VStack(alignment: .leading, spacing: 1) {
-                    Text(episode.title)
-                        .font(.subheadline)
-                        .fontWeight(.medium)
-                    Text(episode.podcastName)
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
+                Text(episode.title)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+                    .truncationMode(.tail)
                 Spacer(minLength: 0)
 
                 Button {
