@@ -12,7 +12,6 @@ struct PodcastDetailView: View {
     @State private var channelDescription: String?
     @State private var isLoading = false
     @State private var loadError: String?
-    @State private var path = NavigationPath()
 
     var body: some View {
         let tint = colors.tint(for: podcast.id)
@@ -79,7 +78,6 @@ struct PodcastDetailView: View {
                         EpisodeListItem(
                             episode: episode,
                             onPlay: { player.play(episode) },
-                            onShowDetail: { path.append(episode) },
                             showsPodcastName: false
                         )
                         .listRowBackground(Color.clear)

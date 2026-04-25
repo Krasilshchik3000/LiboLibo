@@ -4,27 +4,29 @@ struct PodcastsView: View {
     @Environment(PodcastsRepository.self) private var repository
     @Environment(PodcastColorService.self) private var colors
 
+    @State private var path = NavigationPath()
+
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $path) {
             List {
                 if !active.isEmpty {
                     Section("Выходят сейчас") {
                         ForEach(active) { podcast in
-                            NavigationLink(value: podcast) { PodcastRow(podcast: podcast) }
+                            PodcastListItem(podcast: podcast) { path.append(podcast) }
                         }
                     }
                 }
                 if !recent.isEmpty {
                     Section("Недавно выходили") {
                         ForEach(recent) { podcast in
-                            NavigationLink(value: podcast) { PodcastRow(podcast: podcast) }
+                            PodcastListItem(podcast: podcast) { path.append(podcast) }
                         }
                     }
                 }
                 if !dormant.isEmpty {
                     Section("Давно не выходят") {
                         ForEach(dormant) { podcast in
-                            NavigationLink(value: podcast) { PodcastRow(podcast: podcast) }
+                            PodcastListItem(podcast: podcast) { path.append(podcast) }
                         }
                     }
                 }
@@ -87,8 +89,24 @@ private extension String {
     }
 }
 
-/// Та же типографика, что и в `EpisodeRow` (Фид):
-/// .caption — артист, .headline — название, .subheadline — превью описания.
+/// Строка списка подкастов: тап по основной зоне открывает экран подкаста,
+/// маленькая иконка-кнопка слева внизу — toggle подписки (по аналогии с
+/// `DownloadButton` у эпизодов).
+private struct PodcastListItem: View {
+    let podcast: Podcast
+    let onOpen: () -> Void
+
+    var body: some View {
+        Button(action: onOpen) {
+            PodcastRow(podcast: podcast)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Типографика как в `EpisodeRow` (Фид):
+/// .headline — название, .subheadline — превью описания. Внизу — кнопка
+/// подписки в формате иконки.
 private struct PodcastRow: View {
     let podcast: Podcast
 
@@ -119,10 +137,40 @@ private struct PodcastRow: View {
                             .padding(.top, 2)
                     }
                 }
+
+                HStack(spacing: 8) {
+                    SubscribeButton(podcast: podcast)
+                }
+                .padding(.top, 4)
             }
             Spacer(minLength: 0)
         }
         .padding(.vertical, 8)
+        .contentShape(Rectangle())
+    }
+}
+
+/// Иконка-toggle подписки. Логика как у `DownloadButton`: подписан —
+/// заполненная галочка в брендовом цвете, не подписан — контурный плюс
+/// в `.secondary`.
+private struct SubscribeButton: View {
+    let podcast: Podcast
+    @Environment(SubscriptionsService.self) private var subscriptions
+
+    var body: some View {
+        Button {
+            subscriptions.toggle(podcast)
+        } label: {
+            Image(systemName: subscriptions.isSubscribed(podcast)
+                  ? "checkmark.circle.fill"
+                  : "plus.circle")
+                .font(.title3)
+                .foregroundStyle(subscriptions.isSubscribed(podcast) ? Color.liboRed : .secondary)
+                .frame(width: 28, height: 28, alignment: .leading)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .accessibilityLabel(subscriptions.isSubscribed(podcast) ? "Отписаться" : "Подписаться")
     }
 }
 

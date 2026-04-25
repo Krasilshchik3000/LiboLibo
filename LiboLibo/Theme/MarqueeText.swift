@@ -1,53 +1,59 @@
 import SwiftUI
 
-/// Бегущая строка. Если текст помещается в контейнер — рендерится как обычно
-/// без анимации. Если шире — плавно едет влево по бесконечному циклу с
-/// дублированием контента, так что в кадре никогда не образуется «пустота»
-/// между концом и началом.
+/// Бегущая строка с фазной анимацией: пауза в начале → линейный проезд до
+/// конца → пауза в конце → плавный возврат к началу → повтор. Если текст
+/// помещается в контейнер — рендерится статично, без анимации и без
+/// дублирования контента (поэтому ничего не «мигает» при смене состояний).
 ///
 /// Принимает готовый `Text`, чтобы вызывающий мог задать шрифт / вес / цвет
 /// в одном месте и не было дублирующих параметров.
 struct MarqueeText: View {
     let content: Text
-    var spacing: CGFloat = 40
-    /// Скорость прокрутки в точках в секунду.
+    /// Скорость прокрутки в точках в секунду (для линейного проезда).
     var velocity: CGFloat = 30
+    /// Сколько висим в начале перед стартом.
+    var startHold: Double = 1.5
+    /// Сколько висим в конце перед обратным ходом.
+    var endHold: Double = 5.0
+    /// Длительность плавного возврата к началу.
+    var returnDuration: Double = 0.6
 
     @State private var textWidth: CGFloat = 0
-    @State private var phase: CGFloat = 0
+    @State private var containerWidth: CGFloat = 0
+    @State private var offset: CGFloat = 0
 
     var body: some View {
-        // Невидимая копия в одну строку задаёт высоту блока — внешняя ширина
-        // приходит от контейнера (через `.frame(maxWidth: .infinity)` сверху).
+        // Невидимая копия в одну строку фиксирует высоту блока. Внешняя ширина
+        // приходит от контейнера через `.frame(maxWidth: .infinity)` сверху.
         content
             .lineLimit(1)
             .opacity(0)
-            .overlay(GeometryReader { geo in
-                let needsScroll = textWidth > geo.size.width + 0.5
-                HStack(spacing: spacing) {
+            .overlay(
+                GeometryReader { geo in
                     content
                         .fixedSize(horizontal: true, vertical: false)
-                        .background(measureWidth)
-                    if needsScroll {
-                        content.fixedSize(horizontal: true, vertical: false)
-                    }
+                        .background(measureTextWidth)
+                        .offset(x: offset)
+                        .frame(
+                            width: geo.size.width,
+                            height: geo.size.height,
+                            alignment: .leading
+                        )
+                        .clipped()
+                        .onAppear { containerWidth = geo.size.width }
+                        .onChange(of: geo.size.width) { _, w in containerWidth = w }
                 }
-                .offset(x: needsScroll ? phase : 0)
-                .frame(width: geo.size.width, alignment: .leading)
-                .clipped()
-                .onAppear {
-                    if needsScroll { startAnimation() }
-                }
-                .onChange(of: needsScroll) { _, scroll in
-                    if scroll { startAnimation() } else { phase = 0 }
-                }
-                .onChange(of: textWidth) { _, _ in
-                    if textWidth > geo.size.width + 0.5 { startAnimation() }
-                }
-            })
+            )
+            .task(id: cycleKey) {
+                await runCycle()
+            }
     }
 
-    private var measureWidth: some View {
+    /// Меняется при изменении текста или ширин — это перезапускает `.task`
+    /// и саму анимационную петлю с новыми параметрами.
+    private var cycleKey: String { "\(textWidth)/\(containerWidth)" }
+
+    private var measureTextWidth: some View {
         GeometryReader { textGeo in
             Color.clear
                 .onAppear { textWidth = textGeo.size.width }
@@ -55,13 +61,23 @@ struct MarqueeText: View {
         }
     }
 
-    private func startAnimation() {
-        let distance = textWidth + spacing
-        guard distance > 0 else { return }
-        phase = 0
-        let duration = Double(distance) / Double(velocity)
-        withAnimation(.linear(duration: duration).repeatForever(autoreverses: false)) {
-            phase = -distance
+    @MainActor
+    private func runCycle() async {
+        offset = 0
+        let scroll = textWidth - containerWidth
+        guard scroll > 1 else { return }
+        let scrollDuration = max(0.5, Double(scroll) / Double(velocity))
+        while !Task.isCancelled {
+            try? await Task.sleep(for: .seconds(startHold))
+            if Task.isCancelled { return }
+            withAnimation(.linear(duration: scrollDuration)) { offset = -scroll }
+            try? await Task.sleep(for: .seconds(scrollDuration))
+            if Task.isCancelled { return }
+            try? await Task.sleep(for: .seconds(endHold))
+            if Task.isCancelled { return }
+            withAnimation(.easeInOut(duration: returnDuration)) { offset = 0 }
+            try? await Task.sleep(for: .seconds(returnDuration))
+            if Task.isCancelled { return }
         }
     }
 }

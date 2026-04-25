@@ -40,8 +40,6 @@ struct FeedView: View {
             List(repository.allEpisodes) { episode in
                 EpisodeListItem(episode: episode) {
                     player.play(episode)
-                } onShowDetail: {
-                    path.append(episode)
                 }
                 .swipeActions(edge: .trailing) {
                     Button { downloads.toggle(episode) } label: {
@@ -65,7 +63,6 @@ struct FeedView: View {
 struct EpisodeListItem: View {
     let episode: Episode
     let onPlay: () -> Void
-    let onShowDetail: () -> Void
     var showsPodcastName: Bool = true
 
     var body: some View {
@@ -73,12 +70,19 @@ struct EpisodeListItem: View {
             // Премиум-эпизод без entitlement играть нельзя — тап по строке
             // открывает деталь (там тизер «Доступно по подписке»),
             // а не молчаливый no-op в плеере.
-            Button(action: episode.isPlayable ? onPlay : onShowDetail) {
-                EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
+            if episode.isPlayable {
+                Button(action: onPlay) {
+                    EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
+                }
+                .buttonStyle(.plain)
+            } else {
+                NavigationLink(value: episode) {
+                    EpisodeRow(episode: episode, showsPodcastName: showsPodcastName)
+                }
+                .buttonStyle(.plain)
             }
-            .buttonStyle(.plain)
 
-            Button(action: onShowDetail) {
+            NavigationLink(value: episode) {
                 Image(systemName: "info.circle")
                     .font(.title3)
                     .foregroundStyle(.secondary)

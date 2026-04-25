@@ -80,8 +80,7 @@ struct SearchView: View {
                         ForEach(matchingEpisodes) { episode in
                             EpisodeListItem(
                                 episode: episode,
-                                onPlay: { player.play(episode) },
-                                onShowDetail: { path.append(episode) }
+                                onPlay: { player.play(episode) }
                             )
                         }
                     }

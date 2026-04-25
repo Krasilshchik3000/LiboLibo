@@ -93,8 +93,7 @@ struct ProfileView: View {
                 let episode = item.asEpisode
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) },
-                    onShowDetail: { path.append(episode) }
+                    onPlay: { player.play(episode) }
                 )
                 .swipeActions(edge: .trailing) {
                     Button(role: .destructive) {
@@ -112,8 +111,7 @@ struct ProfileView: View {
             ForEach(recentFromSubscriptions) { episode in
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) },
-                    onShowDetail: { path.append(episode) }
+                    onPlay: { player.play(episode) }
                 )
             }
         }
@@ -125,8 +123,7 @@ struct ProfileView: View {
                 let episode = history.episode(for: item)
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) },
-                    onShowDetail: { path.append(episode) }
+                    onPlay: { player.play(episode) }
                 )
             }
         } header: {
