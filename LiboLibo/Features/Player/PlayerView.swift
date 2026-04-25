@@ -91,12 +91,18 @@ private struct Titles: View {
 
     var body: some View {
         VStack(spacing: 4) {
-            Text(episode.podcastName)
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
 
+            Button {
+                NotificationCenter.default.post(name: Notification.Name("OpenPodcastDetailFromPlayer"), object: nil, userInfo: ["podcastId": episode.podcastId])
+            } label: {
+                Text(episode.podcastName)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                    .multilineTextAlignment(.center)
+                    .fixedSize(horizontal: false, vertical: true)
+            }
+            .buttonStyle(.plain)
+            
             Text(episode.title)
                 .font(.headline)
                 .foregroundStyle(.primary)
