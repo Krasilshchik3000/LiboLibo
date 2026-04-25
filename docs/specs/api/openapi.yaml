@@ -188,11 +188,15 @@ components:
 
     Podcast:
       type: object
-      required: [id, name, feed_url]
+      required: [id, name, artist, feed_url, genres, has_premium]
       properties:
         id: { type: integer, format: int64 }
         name: { type: string }
-        artist: { type: string, nullable: true }
+        artist:
+          type: string
+          description: |
+            Имя автора/студии (`<itunes:author>` из RSS). Бэкенд гарантирует
+            непустую строку — если в фиде поле отсутствует, подставляется `""`.
         feed_url: { type: string, format: uri }
         artwork_url: { type: string, format: uri, nullable: true }
         description: { type: string, nullable: true }
@@ -211,14 +215,18 @@ components:
 
     Episode:
       type: object
-      required: [id, podcast_id, title, pub_date, audio_url, is_premium]
+      required: [id, podcast_id, podcast_name, title, summary, pub_date, audio_url, is_premium]
       properties:
         id: { type: string }
         podcast_id: { type: integer, format: int64 }
         podcast_name: { type: string }
         podcast_artwork_url: { type: string, format: uri, nullable: true }
         title: { type: string }
-        summary: { type: string, nullable: true }
+        summary:
+          type: string
+          description: |
+            Текстовое описание выпуска (`<description>` или `<itunes:summary>`).
+            Бэкенд гарантирует строку — если в RSS пусто, подставляется `""`.
         pub_date: { type: string, format: date-time }
         duration_sec: { type: integer, nullable: true }
         audio_url:
