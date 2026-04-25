@@ -1,10 +1,16 @@
 import { prisma } from "../db.js";
 import * as api from "./api.js";
+import { fetchPublicMediaUrls } from "./public-rss.js";
 
-// Полностью на Transistor API. RSS как источник данных не используется.
-// Каждый эпизод в БД идентифицируется Transistor episode id (например, "3195076").
-// Premium = (attributes.type === "bonus") — у Либо-Либо bonus-эпизоды доступны
-// только подписчикам (политика подкаст-сети, в API нет отдельного флага).
+// Источник метаданных — Transistor API. Public RSS используется ТОЛЬКО как
+// gate-сигнал: если эпизод есть в API, но его media_url нет в публичном RSS,
+// значит, Transistor его прячет за пэйволом (Exclusive Episode). На уровне
+// API такого флага нет (см. docs.transistor.fm), это единственный способ
+// отличить exclusive от обычного published-эпизода.
+//
+// is_premium = (mediaUrl ∉ publicMediaUrls) || type === "bonus"
+//
+// Episode.id = Transistor episode id (например, "3195076").
 
 interface RefreshResult {
   podcastId: bigint;
@@ -22,12 +28,20 @@ export interface RefreshSummary {
   results: RefreshResult[];
 }
 
-export async function refreshAllFeeds(): Promise<RefreshSummary> {
+export interface RefreshOptions {
+  // Если задан — рефрешим только подкасты с этими id. Используется CLI
+  // для точечной проверки одного подкаста.
+  onlyPodcastIds?: bigint[];
+}
+
+export async function refreshAllFeeds(opts: RefreshOptions = {}): Promise<RefreshSummary> {
   const apiEnabled = api.isConfigured();
-  const podcasts = await prisma.podcast.findMany();
+  const podcasts = opts.onlyPodcastIds && opts.onlyPodcastIds.length > 0
+    ? await prisma.podcast.findMany({ where: { id: { in: opts.onlyPodcastIds } } })
+    : await prisma.podcast.findMany();
 
   console.log(
-    `[refresh] starting: ${podcasts.length} podcasts, transistor api ${apiEnabled ? "enabled" : "disabled"}`,
+    `[refresh] starting: ${podcasts.length} podcasts${opts.onlyPodcastIds ? " (filtered)" : ""}, transistor api ${apiEnabled ? "enabled" : "disabled"}`,
   );
 
   if (!apiEnabled) {
@@ -126,13 +140,31 @@ async function refreshOne(
 
   const apiEpisodes = episodesByShowId.get(show.id) ?? [];
 
+  // Тянем публичный RSS, чтобы определить, какие эпизоды реально доступны
+  // публично. Те, что Transistor прячет за пэйволом (Exclusive), там
+  // отсутствуют. Если RSS недоступен — fallback на bonus-only логику и
+  // лог-предупреждение.
+  let publicMediaUrls: Set<string> | null = null;
+  try {
+    publicMediaUrls = await fetchPublicMediaUrls(podcast.feedUrl);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn(
+      `[refresh] podcast=${podcast.id} public RSS fetch failed (${msg}); ` +
+        `premium gating falls back to type==="bonus" only`,
+    );
+  }
+
   const items: EpisodeRow[] = [];
   let premiumCount = 0;
   for (const ep of apiEpisodes) {
     if (ep.status !== "published") continue;
     if (!ep.mediaUrl || !ep.pubDate) continue;
 
-    const isPremium = ep.type === "bonus";
+    const notInPublicRSS = publicMediaUrls
+      ? !publicMediaUrls.has(ep.mediaUrl)
+      : false;
+    const isPremium = notInPublicRSS || ep.type === "bonus";
     if (isPremium) premiumCount += 1;
 
     items.push({
