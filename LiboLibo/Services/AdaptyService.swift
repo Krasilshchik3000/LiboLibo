@@ -1,10 +1,10 @@
 import Foundation
 import Observation
+import Adapty
+import AdaptyUI
 
 /// Источник правды о премиум-подписке на стороне iOS.
 ///
-/// Архитектура и решения — `docs/specs/step-2.3-premium-adapty-ios.md`. В двух
-/// словах:
 /// - идентификатор зрителя — `adapty_profile_id` (UUID), его выдаёт Adapty SDK
 ///   и сам кладёт в Keychain;
 /// - решение «есть ли премиум» принимает бэкенд (`POST /v1/me/entitlement/refresh`),
@@ -13,14 +13,10 @@ import Observation
 /// - локальный `isPremium` влияет только на UI; бэк независимо гейтит
 ///   `audio_url`, поэтому подмена локального флага не даёт доступа к контенту.
 ///
-/// **Текущее состояние:** SPM-зависимости Adapty / AdaptyUI ещё не подключены,
-/// поэтому `activate()` и `restorePurchases()` — заглушки, `profileId`
-/// остаётся `nil` и заголовок `X-Adapty-Profile-Id` не шлётся (бэк видит
-/// анонимного зрителя, как и до этой фазы). После добавления SPM нужно
-/// заменить тела `activate()` и `restorePurchases()` (TODO-комментарии внутри),
-/// вытащить `ADAPTY_PUBLIC_SDK_KEY` из `Info.plist` и оживить
-/// `AdaptyPaywallView`. Остальная инфраструктура (refresh, кэш, welcome-логика,
-/// UI) уже работает.
+/// Ключ `ADAPTY_PUBLIC_SDK_KEY` пробрасывается в `Info.plist` через
+/// User-Defined Build Setting (см. `LiboLibo.xcodeproj`). Если ключ пустой —
+/// SDK не активируется, `profileId` остаётся `nil`, бэк видит анонимного
+/// зрителя (поведение для существующих юзеров не меняется).
 @MainActor
 @Observable
 final class AdaptyService {
@@ -28,9 +24,7 @@ final class AdaptyService {
     private(set) var isPremium: Bool = false
     private(set) var expiresAt: Date?
     private(set) var lastRefreshAt: Date?
-    /// `true`, когда Adapty SDK успешно поднялся и `profileId` известен. До
-    /// подключения SPM — всегда `false`. Используется для гейта welcome-paywall'а
-    /// и реальных триггеров (заглушку paywall'а показывать не пытаемся).
+    /// `true`, когда Adapty SDK успешно поднялся и `profileId` известен.
     private(set) var isActivated: Bool = false
 
     private let api: APIClient
@@ -44,30 +38,36 @@ final class AdaptyService {
 
     // MARK: - Lifecycle
 
-    /// Поднимает Adapty SDK, фиксирует `profileId`, делает первый
-    /// `refreshEntitlement`. Зовётся из `LiboLiboApp.onAppear` (cold start).
-    ///
-    /// **TODO (после SPM-add Adapty + AdaptyUI):**
-    /// ```swift
-    /// guard let key = Bundle.main.object(forInfoDictionaryKey: "ADAPTY_PUBLIC_SDK_KEY") as? String,
-    ///       !key.isEmpty else { return }
-    /// let config = AdaptyConfiguration.builder(withAPIKey: key).build()
-    /// try? await Adapty.activate(with: config)
-    /// if let profile = try? await Adapty.getProfile(),
-    ///    let id = UUID(uuidString: profile.profileId) {
-    ///     self.profileId = id
-    ///     self.isActivated = true
-    /// }
-    /// await refreshEntitlement()
-    /// ```
+    /// Поднимает Adapty SDK (если есть ключ), фиксирует `profileId`. Зовётся
+    /// из `LiboLiboApp.task` (cold start). После — `refreshEntitlement`
+    /// зовётся отдельно из composition root, чтобы вызывающий мог решить,
+    /// нужно ли перезагружать ленту.
     func activate() async {
-        // No-op до подключения Adapty SDK. APIClient.profileIdProvider
-        // вернёт nil, бэк продолжит видеть анонимного зрителя.
+        guard let key = Bundle.main.object(forInfoDictionaryKey: "ADAPTY_PUBLIC_SDK_KEY") as? String,
+              !key.isEmpty else {
+            return
+        }
+        do {
+            let configuration = AdaptyConfiguration
+                .builder(withAPIKey: key)
+                .build()
+            try await Adapty.activate(with: configuration)
+            try await AdaptyUI.activate()
+            let profile = try await Adapty.getProfile()
+            if let id = UUID(uuidString: profile.profileId) {
+                self.profileId = id
+                self.isActivated = true
+                defaults.set(profile.profileId, forKey: Keys.profileId)
+            }
+        } catch {
+            // SDK не поднялся — остаёмся в anon mode.
+        }
     }
 
     /// Дёргает `POST /v1/me/entitlement/refresh`, обновляет локальное состояние
-    /// и возвращает `true`, если значение `isPremium` изменилось (тогда вызывающий
-    /// должен перегрузить ленту: `audio_url` зависит от viewer'а на бэке).
+    /// и возвращает `true`, если значение `isPremium` изменилось (тогда
+    /// вызывающий должен перегрузить ленту: `audio_url` зависит от viewer'а
+    /// на бэке).
     @discardableResult
     func refreshEntitlement() async -> Bool {
         guard profileId != nil else { return false }
@@ -81,19 +81,15 @@ final class AdaptyService {
 
     /// Restore через Adapty SDK + последующий refresh. Зовётся по тапу
     /// «Восстановить покупки» в `ProfileView`.
-    ///
-    /// **TODO (после SPM):**
-    /// ```swift
-    /// do {
-    ///     _ = try await Adapty.restorePurchases()
-    ///     let changed = await refreshEntitlement()
-    ///     return isPremium ? .restored : .nothingToRestore
-    /// } catch {
-    ///     return .failed(error)
-    /// }
-    /// ```
     func restorePurchases() async -> RestoreOutcome {
-        return .nothingToRestore
+        guard isActivated else { return .nothingToRestore }
+        do {
+            _ = try await Adapty.restorePurchases()
+            await refreshEntitlement()
+            return isPremium ? .restored : .nothingToRestore
+        } catch {
+            return .failed(error)
+        }
     }
 
     /// Помечает, что welcome-paywall был показан. Дальше 7 дней не показываем.
@@ -101,10 +97,9 @@ final class AdaptyService {
         defaults.set(Date(), forKey: Keys.welcomePaywallLastShownAt)
     }
 
-    /// `true`, если на cold start стоит показать welcome-paywall:
-    /// SDK поднят, премиума нет, последний показ был ≥ 7 дней назад (или его
-    /// не было вовсе). До подключения SPM `isActivated == false`, поэтому
-    /// welcome не появляется — это ожидаемо.
+    /// `true`, если на cold start стоит показать welcome-paywall: SDK
+    /// активирован, премиума нет, последний показ был ≥ 7 дней назад (или
+    /// его не было вовсе).
     var shouldShowWelcomePaywall: Bool {
         guard isActivated, !isPremium else { return false }
         guard let last = defaults.object(forKey: Keys.welcomePaywallLastShownAt) as? Date else {
@@ -131,7 +126,7 @@ final class AdaptyService {
     }
 
     /// Применяет ответ бэка и пишет в кэш. Возвращает `true`, если `isPremium`
-    /// изменился — это сигнал перегрузить ленту.
+    /// изменился.
     private func applyEntitlement(_ dto: EntitlementDTO) -> Bool {
         let wasPremium = isPremium
         self.isPremium = dto.isPremium
