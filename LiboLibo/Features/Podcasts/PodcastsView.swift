@@ -2,6 +2,7 @@ import SwiftUI
 
 struct PodcastsView: View {
     @Environment(PodcastsRepository.self) private var repository
+    @Environment(PodcastColorService.self) private var colors
 
     var body: some View {
         NavigationStack {
@@ -34,13 +35,26 @@ struct PodcastsView: View {
                 PodcastDetailView(podcast: podcast)
             }
         }
+        .task(id: repository.podcasts.count) {
+            for podcast in repository.podcasts {
+                colors.ensureTint(for: podcast.id, artworkUrl: podcast.artworkUrl)
+            }
+        }
     }
 
     // MARK: - Segmentation
 
+    /// Иноязычные версии шоу (Harbin DE, The Adults in the Room EN, The Naked
+    /// Mole Rat EN) скрыты с этого экрана: у них и название, и описание не
+    /// содержат кириллицы. Если такой подкаст обогатится русским описанием
+    /// в RSS — он автоматически вернётся в список.
+    private var russianPodcasts: [Podcast] {
+        repository.podcasts.filter { $0.name.containsCyrillic || ($0.description?.containsCyrillic ?? false) }
+    }
+
     private var active: [Podcast] {
         let cutoff = Date().addingTimeInterval(-90 * 86400)
-        return repository.podcasts
+        return russianPodcasts
             .filter { ($0.lastEpisodeDate ?? .distantPast) >= cutoff }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
     }
@@ -48,7 +62,7 @@ struct PodcastsView: View {
     private var recent: [Podcast] {
         let twelveAgo = Date().addingTimeInterval(-365 * 86400)
         let threeAgo = Date().addingTimeInterval(-90 * 86400)
-        return repository.podcasts
+        return russianPodcasts
             .filter {
                 guard let d = $0.lastEpisodeDate else { return false }
                 return d < threeAgo && d >= twelveAgo
@@ -58,12 +72,18 @@ struct PodcastsView: View {
 
     private var dormant: [Podcast] {
         let twelveAgo = Date().addingTimeInterval(-365 * 86400)
-        return repository.podcasts
+        return russianPodcasts
             .filter { (p: Podcast) -> Bool in
                 guard let d = p.lastEpisodeDate else { return true }
                 return d < twelveAgo
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+}
+
+private extension String {
+    var containsCyrillic: Bool {
+        contains { $0.unicodeScalars.contains { (0x0400...0x04FF).contains($0.value) } }
     }
 }
 

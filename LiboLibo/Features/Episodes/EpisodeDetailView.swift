@@ -6,8 +6,10 @@ struct EpisodeDetailView: View {
     let episode: Episode
 
     @Environment(PlayerService.self) private var player
+    @Environment(PodcastColorService.self) private var colors
 
     var body: some View {
+        let tint = colors.tint(for: episode.podcastId)
         ScrollView {
             VStack(alignment: .leading, spacing: 20) {
                 header
@@ -17,8 +19,13 @@ struct EpisodeDetailView: View {
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
         }
+        .background { TintBackground(tint: tint) }
+        .preferredColorScheme(tint?.preferredColorScheme)
         .navigationTitle("Выпуск")
         .navigationBarTitleDisplayMode(.inline)
+        .task(id: episode.podcastId) {
+            colors.ensureTint(for: episode.podcastId, artworkUrl: episode.podcastArtworkUrl)
+        }
     }
 
     private var header: some View {

@@ -5,11 +5,13 @@ import SwiftUI
 /// громкости, нижний ряд утилит.
 struct PlayerView: View {
     @Environment(PlayerService.self) private var player
+    @Environment(PodcastColorService.self) private var colors
     @Environment(\.dismiss) private var dismiss
     @State private var showsNotes = false
 
     var body: some View {
         if let episode = player.currentEpisode {
+            let tint = colors.tint(for: episode.podcastId)
             VStack(spacing: 0) {
                 Spacer(minLength: 12)
 
@@ -17,17 +19,17 @@ struct PlayerView: View {
 
                 Spacer().frame(height: 24)
 
-                Titles(episode: episode)
+                Titles(episode: episode, tint: tint)
                     .padding(.horizontal, 24)
 
                 Spacer().frame(height: 22)
 
-                ProgressBar()
+                ProgressBar(tint: tint)
                     .padding(.horizontal, 24)
 
                 Spacer().frame(height: 18)
 
-                BigControls()
+                BigControls(tint: tint)
 
                 Spacer().frame(height: 18)
 
@@ -36,7 +38,7 @@ struct PlayerView: View {
 
                 Spacer().frame(height: 18)
 
-                UtilityRow(episode: episode) {
+                UtilityRow(episode: episode, tint: tint) {
                     showsNotes = true
                 }
 
@@ -44,9 +46,12 @@ struct PlayerView: View {
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
             .background {
-                BlurredBackdrop(url: episode.podcastArtworkUrl)
+                TintBackground(tint: tint)
             }
-            .preferredColorScheme(.dark)
+            .preferredColorScheme(tint?.preferredColorScheme ?? .dark)
+            .task(id: episode.podcastId) {
+                colors.ensureTint(for: episode.podcastId, artworkUrl: episode.podcastArtworkUrl)
+            }
             .sheet(isPresented: $showsNotes) {
                 EpisodeNotesSheet(episode: episode)
                     .preferredColorScheme(.light)
@@ -79,18 +84,19 @@ private struct Artwork: View {
 
 private struct Titles: View {
     let episode: Episode
+    let tint: TintColor?
 
     var body: some View {
         VStack(spacing: 4) {
             Text(episode.podcastName)
                 .font(.subheadline)
-                .foregroundStyle(.white.opacity(0.75))
+                .foregroundStyle(tint?.secondaryText ?? Color.white.opacity(0.75))
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
 
             Text(episode.title)
                 .font(.headline)
-                .foregroundStyle(.white)
+                .foregroundStyle(tint?.primaryText ?? .white)
                 .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
@@ -101,11 +107,14 @@ private struct Titles: View {
 /// Apple-Podcasts-style тонкий прогресс. Без видимого thumb-а в idle, лёгкий
 /// наплыв при скрабинге.
 private struct ProgressBar: View {
+    let tint: TintColor?
     @Environment(PlayerService.self) private var player
     @State private var draggedFraction: Double?
     @State private var isDragging = false
 
     var body: some View {
+        let fg = tint?.primaryText ?? .white
+        let bg = tint?.prefersDarkText == true ? Color.black.opacity(0.18) : Color.white.opacity(0.25)
         VStack(spacing: 6) {
             GeometryReader { geo in
                 let width = geo.size.width
@@ -114,10 +123,10 @@ private struct ProgressBar: View {
 
                 ZStack(alignment: .leading) {
                     Capsule()
-                        .fill(Color.white.opacity(0.25))
+                        .fill(bg)
                         .frame(height: trackHeight)
                     Capsule()
-                        .fill(Color.white)
+                        .fill(fg)
                         .frame(width: width * progress, height: trackHeight)
                 }
                 .frame(maxHeight: .infinity, alignment: .center)
@@ -149,7 +158,7 @@ private struct ProgressBar: View {
             }
             .font(.caption)
             .monospacedDigit()
-            .foregroundStyle(.white.opacity(0.85))
+            .foregroundStyle(tint?.secondaryText ?? Color.white.opacity(0.85))
         }
     }
 
@@ -160,53 +169,59 @@ private struct ProgressBar: View {
 }
 
 private struct BigControls: View {
+    let tint: TintColor?
     @Environment(PlayerService.self) private var player
 
     var body: some View {
+        let fg = tint?.primaryText ?? .white
         HStack(spacing: 56) {
-            ControlButton(systemImage: "gobackward.10", size: 30) { player.skip(by: -10) }
+            ControlButton(systemImage: "gobackward.10", size: 30, color: fg) { player.skip(by: -10) }
 
             Button {
                 player.togglePlayPause()
             } label: {
                 Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(.white)
+                    .foregroundStyle(fg)
             }
             .buttonStyle(.plain)
 
-            ControlButton(systemImage: "goforward.10", size: 30) { player.skip(by: 10) }
+            ControlButton(systemImage: "goforward.10", size: 30, color: fg) { player.skip(by: 10) }
         }
     }
 }
 
 private struct UtilityRow: View {
     let episode: Episode
+    let tint: TintColor?
     let onShowNotes: () -> Void
 
     @Environment(PlayerService.self) private var player
 
     var body: some View {
+        let fg = tint?.primaryText ?? .white
         HStack(spacing: 12) {
             PillButton(
                 icon: "speedometer",
                 text: PlayerService.formatRate(player.rate),
-                isHighlighted: player.rate != 1.0
+                isHighlighted: player.rate != 1.0,
+                tint: tint
             ) { player.cycleSpeed() }
 
             PillButton(
                 icon: "moon.zzz",
                 text: player.sleepTimer.label,
-                isHighlighted: player.sleepTimer.isActive
+                isHighlighted: player.sleepTimer.isActive,
+                tint: tint
             ) { player.cycleSleepTimer() }
 
-            DownloadButton(episode: episode, idleTint: .white)
+            DownloadButton(episode: episode, idleTint: fg)
                 .frame(minWidth: 44, minHeight: 44)
 
             Button(action: onShowNotes) {
                 Image(systemName: "doc.text")
                     .font(.title3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(fg)
                     .frame(width: 44, height: 44)
                     .contentShape(Rectangle())
             }
@@ -255,37 +270,17 @@ private struct EpisodeNotesSheet: View {
 
 // MARK: - Components
 
-private struct BlurredBackdrop: View {
-    let url: URL?
-
-    var body: some View {
-        ZStack {
-            AsyncImage(url: url) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().scaledToFill().blur(radius: 80, opaque: true)
-                default:
-                    Color.gray.opacity(0.1)
-                }
-            }
-            .clipped()
-            .ignoresSafeArea()
-
-            Color.black.opacity(0.25).ignoresSafeArea()
-        }
-    }
-}
-
 private struct ControlButton: View {
     let systemImage: String
     let size: CGFloat
+    let color: Color
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Image(systemName: systemImage)
                 .font(.system(size: size))
-                .foregroundStyle(.white)
+                .foregroundStyle(color)
                 .frame(minWidth: 44, minHeight: 44)
                 .contentShape(Rectangle())
         }
@@ -297,9 +292,12 @@ private struct PillButton: View {
     let icon: String
     let text: String
     let isHighlighted: Bool
+    let tint: TintColor?
     let action: () -> Void
 
     var body: some View {
+        let fg = tint?.primaryText ?? .white
+        let idleBg = tint?.prefersDarkText == true ? Color.black.opacity(0.10) : Color.white.opacity(0.18)
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
@@ -312,9 +310,9 @@ private struct PillButton: View {
             .frame(minHeight: 44)
             .background(
                 Capsule()
-                    .fill(isHighlighted ? Color.liboRed.opacity(0.85) : Color.white.opacity(0.18))
+                    .fill(isHighlighted ? Color.liboRed.opacity(0.85) : idleBg)
             )
-            .foregroundStyle(.white)
+            .foregroundStyle(isHighlighted ? Color.white : fg)
             .contentShape(Capsule())
         }
         .buttonStyle(.plain)
