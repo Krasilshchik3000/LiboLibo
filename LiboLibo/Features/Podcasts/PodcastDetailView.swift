@@ -87,7 +87,8 @@ struct PodcastDetailView: View {
                                 player.play(episode, context: context)
                             },
                             onShowDetail: { path.append(episode) },
-                            showsPodcastName: false
+                            showsPodcastName: false,
+                            onPlayNext: { player.playNext(episode) }
                         )
                         .listRowBackground(Color.clear)
                         .swipeActions(edge: .trailing) {
