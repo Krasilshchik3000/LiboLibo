@@ -66,21 +66,7 @@ struct ProfileView: View {
             } else {
                 ForEach(subscribedPodcasts) { podcast in
                     NavigationLink(value: podcast) {
-                        HStack(spacing: 12) {
-                            AsyncImage(url: podcast.artworkUrl) { phase in
-                                switch phase {
-                                case .success(let image):
-                                    image.resizable().aspectRatio(contentMode: .fill)
-                                default:
-                                    Color.secondary.opacity(0.15)
-                                }
-                            }
-                            .frame(width: 48, height: 48)
-                            .clipShape(RoundedRectangle(cornerRadius: 8))
-
-                            Text(podcast.name)
-                                .font(.subheadline)
-                        }
+                        PodcastRow(podcast: podcast, density: .compact)
                     }
                 }
             }
@@ -138,14 +124,12 @@ struct ProfileView: View {
             HStack {
                 Text("История")
                 Spacer()
-                Button {
+                Button(role: .destructive) {
                     showsClearHistoryAlert = true
                 } label: {
                     Text("Очистить")
                         .font(.footnote)
-                        .foregroundStyle(.liboRed)
                 }
-                .buttonStyle(.plain)
             }
         }
     }

@@ -69,7 +69,7 @@ struct SearchView: View {
                     Section("Подкасты") {
                         ForEach(matchingPodcasts) { podcast in
                             NavigationLink(value: podcast) {
-                                PodcastSearchRow(podcast: podcast)
+                                PodcastRow(podcast: podcast, density: .compact)
                             }
                         }
                     }
@@ -91,32 +91,3 @@ struct SearchView: View {
     }
 }
 
-private struct PodcastSearchRow: View {
-    let podcast: Podcast
-
-    var body: some View {
-        HStack(spacing: 12) {
-            AsyncImage(url: podcast.artworkUrl) { phase in
-                switch phase {
-                case .success(let image):
-                    image.resizable().aspectRatio(contentMode: .fill)
-                default:
-                    Color.secondary.opacity(0.15)
-                }
-            }
-            .frame(width: 56, height: 56)
-            .clipShape(RoundedRectangle(cornerRadius: 8))
-
-            VStack(alignment: .leading, spacing: 2) {
-                Text(podcast.name)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
-                Text(podcast.artist)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-            }
-            Spacer(minLength: 0)
-        }
-        .padding(.vertical, 2)
-    }
-}

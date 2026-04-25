@@ -21,17 +21,17 @@ struct EpisodeRow: View {
                 }
             }
             .frame(width: 80, height: 80)
-            .clipShape(RoundedRectangle(cornerRadius: 10))
+            .clipShape(RoundedRectangle(cornerRadius: Theme.radiusMedium))
 
             VStack(alignment: .leading, spacing: 4) {
                 if showsPodcastName {
                     Text(episode.podcastName)
-                        .font(.caption)
-                        .foregroundStyle(.liboRed)
+                        .font(Theme.itemMeta)
+                        .foregroundStyle(.secondary)
                 }
 
                 Text(episode.title)
-                    .font(.headline)
+                    .font(Theme.itemTitle)
                     .foregroundStyle(.primary)
 
                 if showsPreview {

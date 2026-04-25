@@ -17,7 +17,7 @@ struct MiniPlayerView: View {
                     }
                 }
                 .frame(width: 36, height: 36)
-                .clipShape(RoundedRectangle(cornerRadius: 6))
+                .clipShape(RoundedRectangle(cornerRadius: Theme.radiusSmall))
 
                 VStack(alignment: .leading, spacing: 1) {
                     MarqueeText(
@@ -48,7 +48,7 @@ struct MiniPlayerView: View {
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
                         .font(.title2)
-                        .foregroundStyle(.liboRed)
+                        .foregroundStyle(.primary)
                         .frame(width: 44, height: 44)
                         .contentShape(Rectangle())
                 }
