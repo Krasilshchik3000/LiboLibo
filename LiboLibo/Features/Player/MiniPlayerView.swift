@@ -34,16 +34,6 @@ struct MiniPlayerView: View {
                 .frame(maxWidth: .infinity, alignment: .leading)
 
                 Button {
-                    player.skip(by: -10)
-                } label: {
-                    Image(systemName: "gobackward.10")
-                        .font(.title3)
-                        .frame(width: 44, height: 44)
-                        .contentShape(Rectangle())
-                }
-                .buttonStyle(.plain)
-
-                Button {
                     player.togglePlayPause()
                 } label: {
                     Image(systemName: player.isPlaying ? "pause.fill" : "play.fill")
