@@ -69,7 +69,7 @@ struct ProfileView: View {
             }
             .sheet(isPresented: $showsPaywall) {
                 AdaptyPaywallView(
-                    placementId: "profile-cta",
+                    placementId: "default",
                     onPurchase: {
                         showsPaywall = false
                         Task {
