@@ -22,6 +22,10 @@ final class PlayerService {
         }
     }
 
+    /// Колбэк, который вызывается при старте нового эпизода.
+    /// Используется HistoryService, чтобы записать факт прослушивания.
+    var onPlay: ((Episode) -> Void)?
+
     static let speedOptions: [Float] = [0.8, 1.0, 1.25, 1.5, 2.0]
 
     private let player = AVPlayer()
@@ -49,6 +53,7 @@ final class PlayerService {
         player.rate = rate
         isPlaying = true
         updateNowPlayingInfo()
+        onPlay?(episode)
     }
 
     func togglePlayPause() {

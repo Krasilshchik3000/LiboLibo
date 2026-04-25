@@ -4,6 +4,7 @@ struct PodcastDetailView: View {
     let podcast: Podcast
 
     @Environment(PlayerService.self) private var player
+    @Environment(SubscriptionsService.self) private var subscriptions
 
     @State private var episodes: [Episode] = []
     @State private var isLoading = false
@@ -24,13 +25,26 @@ struct PodcastDetailView: View {
                     .frame(width: 96, height: 96)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
 
-                    VStack(alignment: .leading, spacing: 4) {
+                    VStack(alignment: .leading, spacing: 6) {
                         Text(podcast.name)
                             .font(.title3)
                             .fontWeight(.semibold)
                         Text(podcast.artist)
                             .font(.subheadline)
                             .foregroundStyle(.secondary)
+
+                        Button {
+                            subscriptions.toggle(podcast)
+                        } label: {
+                            Label(
+                                subscriptions.isSubscribed(podcast) ? "Отписаться" : "Подписаться",
+                                systemImage: subscriptions.isSubscribed(podcast) ? "bookmark.fill" : "bookmark"
+                            )
+                            .font(.subheadline)
+                        }
+                        .buttonStyle(.bordered)
+                        .controlSize(.small)
+                        .tint(subscriptions.isSubscribed(podcast) ? .secondary : .accentColor)
                     }
                     Spacer(minLength: 0)
                 }
