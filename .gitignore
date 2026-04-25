@@ -23,9 +23,6 @@ xcuserdata/
 *.dSYM.zip
 *.dSYM
 
-# Сгенерированный XcodeGen проект (источник правды — project.yml)
-*.xcodeproj/
-
 # Swift Package Manager
 .build/
 Packages/
