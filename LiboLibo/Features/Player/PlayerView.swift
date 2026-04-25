@@ -1,5 +1,9 @@
 import SwiftUI
 
+/// Now-playing screen в духе Apple Podcasts: компактная обложка, две строки
+/// заголовка, прогресс-слайдер, крупные контролы, нижний ряд утилит.
+/// Все размеры зафиксированы — чтобы обложка не разбухала и текст не убегал
+/// за поля.
 struct PlayerView: View {
     @Environment(PlayerService.self) private var player
     @Environment(\.dismiss) private var dismiss
@@ -10,81 +14,32 @@ struct PlayerView: View {
             ZStack {
                 BlurredBackdrop(url: episode.podcastArtworkUrl)
 
-                VStack(spacing: 20) {
-                    AsyncImage(url: episode.podcastArtworkUrl) { phase in
-                        switch phase {
-                        case .success(let image):
-                            image.resizable().aspectRatio(contentMode: .fill)
-                        default:
-                            Color.white.opacity(0.1)
-                        }
-                    }
-                    .aspectRatio(1, contentMode: .fit)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-                    .padding(.horizontal, 40)
-                    .padding(.top, 24)
+                VStack(spacing: 0) {
+                    Spacer(minLength: 12)
 
-                    VStack(spacing: 6) {
-                        Text(episode.podcastName)
-                            .font(.subheadline)
-                            .foregroundStyle(.white.opacity(0.8))
-                        Text(episode.title)
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.white)
-                            .multilineTextAlignment(.center)
-                    }
-                    .padding(.horizontal, 24)
+                    Artwork(url: episode.podcastArtworkUrl)
+
+                    Spacer().frame(height: 28)
+
+                    Titles(episode: episode)
+                        .padding(.horizontal, 24)
+
+                    Spacer().frame(height: 22)
 
                     ProgressSlider()
                         .padding(.horizontal, 32)
 
-                    HStack(spacing: 44) {
-                        ControlButton(systemImage: "gobackward.10", size: 32) { player.skip(by: -10) }
+                    Spacer().frame(height: 16)
 
-                        Button {
-                            player.togglePlayPause()
-                        } label: {
-                            Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
-                                .font(.system(size: 72))
-                                .foregroundStyle(.white)
-                        }
-                        .buttonStyle(.plain)
+                    BigControls()
 
-                        ControlButton(systemImage: "goforward.10", size: 32) { player.skip(by: 10) }
+                    Spacer().frame(height: 20)
+
+                    UtilityRow(episode: episode) {
+                        showsNotes = true
                     }
 
-                    HStack(spacing: 12) {
-                        PillButton(
-                            icon: "speedometer",
-                            text: PlayerService.formatRate(player.rate),
-                            isHighlighted: player.rate != 1.0
-                        ) { player.cycleSpeed() }
-
-                        PillButton(
-                            icon: "moon.zzz",
-                            text: player.sleepTimer.label,
-                            isHighlighted: player.sleepTimer.isActive
-                        ) { player.cycleSleepTimer() }
-
-                        DownloadButton(episode: episode, idleTint: .white)
-                            .frame(minWidth: 44, minHeight: 44)
-
-                        Button {
-                            showsNotes = true
-                        } label: {
-                            Image(systemName: "doc.text")
-                                .font(.title3)
-                                .foregroundStyle(.white)
-                                .frame(width: 44, height: 44)
-                                .contentShape(Rectangle())
-                        }
-                        .buttonStyle(.plain)
-                        .accessibilityLabel("Описание выпуска")
-                    }
-
-                    Spacer(minLength: 16)
+                    Spacer(minLength: 24)
                 }
             }
             .preferredColorScheme(.dark)
@@ -92,6 +47,107 @@ struct PlayerView: View {
                 EpisodeNotesSheet(episode: episode)
                     .preferredColorScheme(.light)
             }
+        }
+    }
+}
+
+// MARK: - Pieces
+
+private struct Artwork: View {
+    let url: URL?
+
+    var body: some View {
+        AsyncImage(url: url) { phase in
+            switch phase {
+            case .success(let image):
+                image.resizable().aspectRatio(contentMode: .fill)
+            default:
+                Color.white.opacity(0.1)
+            }
+        }
+        .aspectRatio(1, contentMode: .fit)
+        .frame(maxWidth: 300, maxHeight: 300)
+        .clipShape(RoundedRectangle(cornerRadius: 16))
+        .shadow(color: .black.opacity(0.3), radius: 18, y: 8)
+        .padding(.horizontal, 32)
+    }
+}
+
+private struct Titles: View {
+    let episode: Episode
+
+    var body: some View {
+        VStack(spacing: 6) {
+            Text(episode.podcastName)
+                .font(.subheadline)
+                .foregroundStyle(.white.opacity(0.8))
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+
+            Text(episode.title)
+                .font(.title3)
+                .fontWeight(.semibold)
+                .foregroundStyle(.white)
+                .multilineTextAlignment(.center)
+                .fixedSize(horizontal: false, vertical: true)
+        }
+        .frame(maxWidth: .infinity)
+    }
+}
+
+private struct BigControls: View {
+    @Environment(PlayerService.self) private var player
+
+    var body: some View {
+        HStack(spacing: 40) {
+            ControlButton(systemImage: "gobackward.10", size: 30) { player.skip(by: -10) }
+
+            Button {
+                player.togglePlayPause()
+            } label: {
+                Image(systemName: player.isPlaying ? "pause.circle.fill" : "play.circle.fill")
+                    .font(.system(size: 64))
+                    .foregroundStyle(.white)
+            }
+            .buttonStyle(.plain)
+
+            ControlButton(systemImage: "goforward.10", size: 30) { player.skip(by: 10) }
+        }
+    }
+}
+
+private struct UtilityRow: View {
+    let episode: Episode
+    let onShowNotes: () -> Void
+
+    @Environment(PlayerService.self) private var player
+
+    var body: some View {
+        HStack(spacing: 12) {
+            PillButton(
+                icon: "speedometer",
+                text: PlayerService.formatRate(player.rate),
+                isHighlighted: player.rate != 1.0
+            ) { player.cycleSpeed() }
+
+            PillButton(
+                icon: "moon.zzz",
+                text: player.sleepTimer.label,
+                isHighlighted: player.sleepTimer.isActive
+            ) { player.cycleSleepTimer() }
+
+            DownloadButton(episode: episode, idleTint: .white)
+                .frame(minWidth: 44, minHeight: 44)
+
+            Button(action: onShowNotes) {
+                Image(systemName: "doc.text")
+                    .font(.title3)
+                    .foregroundStyle(.white)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Описание выпуска")
         }
     }
 }
@@ -137,6 +193,7 @@ private struct EpisodeNotesSheet: View {
 
 private struct BlurredBackdrop: View {
     let url: URL?
+
     var body: some View {
         ZStack {
             AsyncImage(url: url) { phase in
@@ -181,7 +238,9 @@ private struct PillButton: View {
         Button(action: action) {
             HStack(spacing: 6) {
                 Image(systemName: icon)
-                Text(text).font(.subheadline).fontWeight(.medium)
+                Text(text)
+                    .font(.subheadline)
+                    .fontWeight(.medium)
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)
@@ -199,27 +258,15 @@ private struct PillButton: View {
 
 private struct ProgressSlider: View {
     @Environment(PlayerService.self) private var player
-    @State private var draggedValue: Double?
+    @State private var draggedFraction: Double?
 
     var body: some View {
         VStack(spacing: 6) {
-            Slider(
-                value: Binding(
-                    get: {
-                        if let dv = draggedValue { return dv }
-                        return player.duration > 0 ? player.currentTime / player.duration : 0
-                    },
-                    set: { draggedValue = $0 }
-                ),
-                in: 0...1,
-                onEditingChanged: { editing in
-                    if !editing, let dv = draggedValue, player.duration > 0 {
-                        player.seek(to: dv * player.duration)
-                        draggedValue = nil
-                    }
-                }
+            CustomProgressBar(
+                fraction: bindingFraction,
+                onDragEnd: handleDragEnd
             )
-            .tint(.white)
+            .frame(height: 12)
 
             HStack {
                 Text(PlayerService.formatTime(player.currentTime))
@@ -228,7 +275,67 @@ private struct ProgressSlider: View {
             }
             .font(.caption)
             .monospacedDigit()
-            .foregroundStyle(.white.opacity(0.7))
+            .foregroundStyle(.white.opacity(0.85))
+        }
+    }
+
+    private var bindingFraction: Binding<Double> {
+        Binding(
+            get: {
+                if let dv = draggedFraction { return dv }
+                return player.duration > 0 ? player.currentTime / player.duration : 0
+            },
+            set: { draggedFraction = $0 }
+        )
+    }
+
+    private func handleDragEnd(_ fraction: Double) {
+        if player.duration > 0 {
+            player.seek(to: fraction * player.duration)
+        }
+        draggedFraction = nil
+    }
+}
+
+/// Кастомный прогресс-бар: серый трек + красный заполненный участок + белый thumb.
+/// Системный Slider на blurred backdrop часто почти невидим.
+private struct CustomProgressBar: View {
+    @Binding var fraction: Double
+    let onDragEnd: (Double) -> Void
+
+    var body: some View {
+        GeometryReader { geo in
+            let width = geo.size.width
+            let progress = max(0, min(1, fraction))
+            let trackHeight: CGFloat = 4
+            let thumbSize: CGFloat = 12
+
+            ZStack(alignment: .leading) {
+                Capsule()
+                    .fill(Color.white.opacity(0.25))
+                    .frame(height: trackHeight)
+                Capsule()
+                    .fill(Color.liboRed)
+                    .frame(width: width * progress, height: trackHeight)
+                Circle()
+                    .fill(Color.white)
+                    .frame(width: thumbSize, height: thumbSize)
+                    .offset(x: width * progress - thumbSize / 2)
+                    .shadow(color: .black.opacity(0.3), radius: 2, y: 1)
+            }
+            .frame(maxHeight: .infinity, alignment: .center)
+            .contentShape(Rectangle())
+            .gesture(
+                DragGesture(minimumDistance: 0)
+                    .onChanged { value in
+                        let f = max(0, min(1, value.location.x / width))
+                        fraction = f
+                    }
+                    .onEnded { value in
+                        let f = max(0, min(1, value.location.x / width))
+                        onDragEnd(f)
+                    }
+            )
         }
     }
 }
