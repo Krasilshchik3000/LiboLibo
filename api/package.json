@@ -24,7 +24,7 @@
     "basic-auth": "^2.0.1",
     "ejs": "^5.0.2",
     "express": "^4.21.1",
-    "fast-xml-parser": "^4.5.0",
+    "fast-xml-parser": "^5.7.0",
     "image-size": "^2.0.2",
     "multer": "^2.1.1"
   },
