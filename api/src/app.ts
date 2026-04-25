@@ -5,6 +5,7 @@ import { feedRouter } from "./routes/feed.js";
 import { episodesRouter } from "./routes/episodes.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
+import { legalRouter } from "./routes/legal.js";
 
 export function createApp() {
   const app = express();
@@ -29,6 +30,10 @@ export function createApp() {
   app.use("/v1", episodesRouter);
   app.use("/v1", devicesRouter);
   app.use("/v1", meRouter);
+
+  // Legal pages — served at the root, не под /v1, чтобы URL были короткие
+  // и удобные для App Store / In-App-листинга.
+  app.use(legalRouter);
 
   // На Railway фид обновляется отдельным Cron Service, который запускает
   // `npm run refresh` (см. docs/specs/step-02-backend.md и api/README.md).
