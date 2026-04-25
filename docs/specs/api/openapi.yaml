@@ -207,6 +207,143 @@ paths:
             application/json:
               schema: { $ref: "#/components/schemas/Error" }
 
+  /episodes/{episodeId}/comments:
+    get:
+      summary: Список голос-комментариев к эпизоду
+      description: |
+        Читать могут все, в том числе free-юзеры. Сортировка ASC по
+        `timecode_sec`, при равенстве — ASC по `created_at`. Без пагинации
+        на v1; берётся не более 1000 строк.
+      parameters:
+        - name: episodeId
+          in: path
+          required: true
+          schema: { type: string }
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/CommentList" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+    post:
+      summary: Опубликовать голос-комментарий (premium-only)
+      description: |
+        Премиум-пользователь оставляет голосовую заметку: m4a-файл (≤2 МБ,
+        ≤60 с), её распознанный на iOS текст и тайм-код в эпизоде. На бэке
+        лениво создаётся запись `users` с птица-именем (детерминированно
+        по `adapty_profile_id`). Файл сохраняется на Volume mount, в
+        ответ — DTO с `audio_url` для стриминга.
+
+        Rate limit: 10 POST в минуту на `adapty_profile_id`.
+      parameters:
+        - name: episodeId
+          in: path
+          required: true
+          schema: { type: string }
+        - $ref: "#/components/parameters/AdaptyProfileId"
+      requestBody:
+        required: true
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: [audio, transcript, duration_sec, timecode_sec]
+              properties:
+                audio:
+                  type: string
+                  format: binary
+                  description: m4a/AAC файл, ≤2 МБ.
+                transcript:
+                  type: string
+                  description: Расшифровка от SFSpeechRecognizer на iOS, ≤4000 символов. Может быть пустой строкой, если распознавание не удалось.
+                duration_sec:
+                  type: integer
+                  minimum: 1
+                  maximum: 60
+                timecode_sec:
+                  type: integer
+                  minimum: 0
+      responses:
+        "201":
+          description: Создано
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Comment" }
+        "400":
+          description: Валидация не прошла (`invalid_audio`, `invalid_duration`, `invalid_timecode`, `transcript_too_long`, `missing_audio`).
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "402":
+          description: Премиум требуется. Тело — `{error: "premium_required"}`.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "413":
+          description: Файл больше 2 МБ.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "429":
+          description: Превышен лимит 10 POST в минуту.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+
+  /comments/{id}:
+    delete:
+      summary: Удалить свой комментарий
+      description: |
+        Удалить может только автор: `X-Adapty-Profile-Id` должен совпадать
+        с `author_adapty_profile_id`. Файл с диска чистится best-effort.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+        - $ref: "#/components/parameters/AdaptyProfileId"
+      responses:
+        "204":
+          description: Удалено.
+        "401":
+          description: Заголовок `X-Adapty-Profile-Id` отсутствует.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "403":
+          description: Не автор комментария.
+          content:
+            application/json:
+              schema: { $ref: "#/components/schemas/Error" }
+        "404":
+          $ref: "#/components/responses/NotFound"
+
+  /comments/{id}/audio:
+    get:
+      summary: Стрим аудиофайла комментария
+      description: |
+        Без авторизации. `Cache-Control: public, max-age=31536000, immutable`
+        — id уникален, файл по нему никогда не меняется.
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema: { type: string, format: uuid }
+      responses:
+        "200":
+          description: OK
+          content:
+            audio/mp4:
+              schema:
+                type: string
+                format: binary
+        "404":
+          $ref: "#/components/responses/NotFound"
+
 components:
   parameters:
     DeviceId:
@@ -358,3 +495,54 @@ components:
       properties:
         error: { type: string }
         message: { type: string }
+
+    CommentAuthor:
+      type: object
+      required: [bird_name]
+      properties:
+        bird_name:
+          type: string
+          description: Имя автора — название птицы, выдаётся детерминированно по `adapty_profile_id`. На коллизию — суффикс `-2`/`-3`/...
+
+    Comment:
+      type: object
+      required:
+        [
+          id,
+          author,
+          transcript,
+          timecode_sec,
+          duration_sec,
+          audio_url,
+          created_at,
+        ]
+      properties:
+        id:
+          type: string
+          format: uuid
+        author: { $ref: "#/components/schemas/CommentAuthor" }
+        transcript:
+          type: string
+          description: Расшифровка от SFSpeechRecognizer на iOS. Может быть пустой строкой.
+        timecode_sec:
+          type: integer
+          minimum: 0
+          description: Момент в эпизоде, на котором был тап mic-кнопки.
+        duration_sec:
+          type: integer
+          description: Длительность голосового комментария.
+        audio_url:
+          type: string
+          format: uri
+          description: Полный URL к стрим-эндпоинту аудиофайла.
+        created_at:
+          type: string
+          format: date-time
+
+    CommentList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items: { $ref: "#/components/schemas/Comment" }

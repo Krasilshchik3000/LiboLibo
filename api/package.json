@@ -9,7 +9,7 @@
   "scripts": {
     "dev": "tsx watch src/server.ts",
     "build": "tsc -p tsconfig.json && prisma generate",
-    "start": "node dist/server.js",
+    "start": "prisma db push --skip-generate && node dist/server.js",
     "seed": "tsx src/lib/seed.ts",
     "refresh": "tsx src/transistor/refresh-cli.ts",
     "refresh:instagram": "tsx src/instagram/refresh-cli.ts",
@@ -25,12 +25,14 @@
     "ejs": "^5.0.2",
     "express": "^4.21.1",
     "fast-xml-parser": "^4.5.0",
-    "image-size": "^2.0.2"
+    "image-size": "^2.0.2",
+    "multer": "^2.1.1"
   },
   "devDependencies": {
     "@types/basic-auth": "^1.1.8",
     "@types/ejs": "^3.1.5",
     "@types/express": "^5.0.0",
+    "@types/multer": "^2.1.0",
     "@types/node": "^22.9.0",
     "prisma": "^6.19.3",
     "tsx": "^4.19.2",

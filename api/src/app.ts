@@ -5,6 +5,7 @@ import { feedRouter } from "./routes/feed.js";
 import { episodesRouter } from "./routes/episodes.js";
 import { devicesRouter } from "./routes/devices.js";
 import { meRouter } from "./routes/me.js";
+import { commentsRouter } from "./routes/comments.js";
 import { legalRouter } from "./routes/legal.js";
 import { mediaRouter } from "./routes/media.js";
 import { feedInstagramRouter } from "./routes/feed-instagram.js";
@@ -34,6 +35,7 @@ export function createApp() {
   app.use("/v1", episodesRouter);
   app.use("/v1", devicesRouter);
   app.use("/v1", meRouter);
+  app.use("/v1", commentsRouter);
   app.use("/v1", feedInstagramRouter);
 
   // Web-админка модерации Instagram-ленты (Phase 3.C). HTTP Basic Auth,

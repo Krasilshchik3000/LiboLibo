@@ -50,6 +50,7 @@ model Episode {
   updatedAt   DateTime @updatedAt @map("updated_at")
 
   instagramPosts InstagramPost[]
+  comments       Comment[]
 
   @@index([podcastId, pubDate(sort: Desc)])
   @@index([pubDate(sort: Desc)])
@@ -81,23 +82,23 @@ model Device {
 // медиа на этом этапе НЕ скачиваются — это делает downloader (Фаза B).
 
 model InstagramPost {
-  id            String     @id @default(uuid()) @db.Uuid
-  igMediaId     String     @unique @map("ig_media_id")
-  igPermalink   String     @map("ig_permalink")
-  type          IgPostType
-  caption       String?
-  igCreatedAt   DateTime   @map("ig_created_at")
-  status        IgStatus   @default(PENDING)
-  publishedAt   DateTime?  @map("published_at")
-  ctaType       IgCtaType? @map("cta_type")
-  ctaEpisodeId  String?    @map("cta_episode_id")
-  ctaEpisode    Episode?   @relation(fields: [ctaEpisodeId], references: [id], onDelete: SetNull)
-  ctaPodcastId  BigInt?    @map("cta_podcast_id")
-  ctaPodcast    Podcast?   @relation(fields: [ctaPodcastId], references: [id], onDelete: SetNull)
-  ctaUrl        String?    @map("cta_url")
-  ctaLabel      String?    @map("cta_label")
-  createdAt     DateTime   @default(now()) @map("created_at")
-  updatedAt     DateTime   @updatedAt @map("updated_at")
+  id           String     @id @default(uuid()) @db.Uuid
+  igMediaId    String     @unique @map("ig_media_id")
+  igPermalink  String     @map("ig_permalink")
+  type         IgPostType
+  caption      String?
+  igCreatedAt  DateTime   @map("ig_created_at")
+  status       IgStatus   @default(PENDING)
+  publishedAt  DateTime?  @map("published_at")
+  ctaType      IgCtaType? @map("cta_type")
+  ctaEpisodeId String?    @map("cta_episode_id")
+  ctaEpisode   Episode?   @relation(fields: [ctaEpisodeId], references: [id], onDelete: SetNull)
+  ctaPodcastId BigInt?    @map("cta_podcast_id")
+  ctaPodcast   Podcast?   @relation(fields: [ctaPodcastId], references: [id], onDelete: SetNull)
+  ctaUrl       String?    @map("cta_url")
+  ctaLabel     String?    @map("cta_label")
+  createdAt    DateTime   @default(now()) @map("created_at")
+  updatedAt    DateTime   @updatedAt @map("updated_at")
 
   media InstagramMedia[]
 
@@ -156,4 +157,39 @@ model Entitlement {
   updatedAt       DateTime  @updatedAt @map("updated_at")
 
   @@map("entitlements")
+}
+
+// Identity for users who post voice comments. Keyed by adapty_profile_id —
+// the same identifier that's used in `entitlements`. Created lazily on
+// first POST /v1/episodes/:id/comments. display_name is a deterministic
+// pick from the BIRDS pool (lib/birdNames.ts), with -2/-3 suffix on
+// UNIQUE collision. See docs/specs/step-04-voice-comments.md.
+model User {
+  adaptyProfileId String   @id @map("adapty_profile_id")
+  displayName     String   @unique @map("display_name")
+  createdAt       DateTime @default(now()) @map("created_at")
+
+  comments Comment[]
+
+  @@map("users")
+}
+
+// One voice comment on an episode. audio_path is a path on the Volume
+// mount (e.g. /data/comments/<uuid>.m4a). Transcript can be empty if
+// SFSpeechRecognizer failed on the iOS side. timecode_sec = the moment
+// in the episode where the user tapped the mic button.
+model Comment {
+  id                    String   @id @default(uuid()) @db.Uuid
+  episodeId             String   @map("episode_id")
+  episode               Episode  @relation(fields: [episodeId], references: [id], onDelete: Cascade)
+  authorAdaptyProfileId String   @map("author_adapty_profile_id")
+  author                User     @relation(fields: [authorAdaptyProfileId], references: [adaptyProfileId], onDelete: Cascade)
+  audioPath             String   @map("audio_path")
+  audioDurationSec      Int      @map("audio_duration_sec")
+  transcript            String
+  timecodeSec           Int      @map("timecode_sec")
+  createdAt             DateTime @default(now()) @map("created_at")
+
+  @@index([episodeId, timecodeSec])
+  @@map("comments")
 }
