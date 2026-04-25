@@ -45,18 +45,13 @@ struct PodcastDetailView: View {
                         Spacer(minLength: 0)
                     }
 
-                    Button {
+                    SubscribeCTA(
+                        isSubscribed: subscriptions.isSubscribed(podcast),
+                        accent: accent,
+                        accentForeground: tint?.accentForeground ?? .white
+                    ) {
                         subscriptions.toggle(podcast)
-                    } label: {
-                        Label(
-                            subscriptions.isSubscribed(podcast) ? "Подписан" : "Подписаться",
-                            systemImage: subscriptions.isSubscribed(podcast) ? "checkmark" : "plus"
-                        )
-                        .frame(maxWidth: .infinity, minHeight: 44)
-                        .foregroundStyle(tint?.accentForeground ?? .white)
                     }
-                    .buttonStyle(.borderedProminent)
-                    .tint(subscriptions.isSubscribed(podcast) ? .secondary : accent)
 
                     if let desc = channelDescription, !desc.isEmpty {
                         Text(desc)
@@ -87,7 +82,8 @@ struct PodcastDetailView: View {
                                 player.play(episode, context: context)
                             },
                             onShowDetail: { path.append(episode) },
-                            showsPodcastName: false
+                            showsPodcastName: false,
+                            onPlayNext: { player.playNext(episode) }
                         )
                         .listRowBackground(Color.clear)
                         .swipeActions(edge: .trailing) {
@@ -113,6 +109,36 @@ struct PodcastDetailView: View {
         .task(id: podcast.id) {
             colors.ensureTint(for: podcast.id, artworkUrl: podcast.artworkUrl)
             await load()
+        }
+    }
+
+    private struct SubscribeCTA: View {
+        let isSubscribed: Bool
+        let accent: Color
+        let accentForeground: Color
+        let action: () -> Void
+
+        var body: some View {
+            Button(action: action) {
+                Label(
+                    isSubscribed ? "Подписан" : "Подписаться",
+                    systemImage: isSubscribed ? "checkmark" : "plus"
+                )
+                .font(.body.weight(.semibold))
+                .frame(maxWidth: .infinity, minHeight: 44)
+                .foregroundStyle(isSubscribed ? accent : accentForeground)
+                .background(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .fill(isSubscribed ? AnyShapeStyle(accent.opacity(0.15)) : AnyShapeStyle(accent))
+                )
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12, style: .continuous)
+                        .strokeBorder(accent.opacity(isSubscribed ? 0.3 : 0), lineWidth: 1)
+                )
+                .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel(isSubscribed ? "Отписаться" : "Подписаться")
         }
     }
 
