@@ -112,7 +112,12 @@ struct ProfileView: View {
             ForEach(recentFromSubscriptions) { episode in
                 EpisodeListItem(
                     episode: episode,
-                    onPlay: { player.play(episode) },
+                    onPlay: {
+                        let context = repository.allEpisodes
+                            .filter { $0.podcastId == episode.podcastId }
+                            .sorted { $0.pubDate < $1.pubDate }
+                        player.play(episode, context: context)
+                    },
                     onShowDetail: { path.append(episode) }
                 )
             }

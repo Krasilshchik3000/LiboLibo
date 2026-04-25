@@ -39,7 +39,8 @@ struct FeedView: View {
         } else {
             List(repository.allEpisodes) { episode in
                 EpisodeListItem(episode: episode) {
-                    player.play(episode)
+                    let context = repository.allEpisodes.sorted { $0.pubDate < $1.pubDate }
+                    player.play(episode, context: context)
                 } onShowDetail: {
                     path.append(episode)
                 }
