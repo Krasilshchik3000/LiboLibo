@@ -109,19 +109,29 @@ async function refreshOne(
   }
 
   // Step 3: persist public episodes (parsed from RSS).
+  // Bonus-эпизоды (<itunes:episodeType>bonus</itunes:episodeType>) у Либо-Либо
+  // — это контент для подписчиков. Transistor публикует их в публичном RSS,
+  // но mp3 раздавать всем нельзя — помечаем как premium, чтобы serialize.ts
+  // занулил audio_url для viewer'ов без entitlement'а.
   if (rssResult.kind === "fresh") {
+    let bonusCount = 0;
     await upsertEpisodes(
       podcast.id,
-      rssResult.feed.episodes.map((e) => ({
-        id: e.id,
-        title: e.title,
-        summary: e.summary,
-        pubDate: e.pubDate,
-        durationSec: e.durationSec,
-        audioUrl: e.audioUrl,
-        isPremium: false,
-      })),
+      rssResult.feed.episodes.map((e) => {
+        const isBonus = e.episodeType === "bonus";
+        if (isBonus) bonusCount++;
+        return {
+          id: e.id,
+          title: e.title,
+          summary: e.summary,
+          pubDate: e.pubDate,
+          durationSec: e.durationSec,
+          audioUrl: e.audioUrl,
+          isPremium: isBonus,
+        };
+      }),
     );
+    premiumCount += bonusCount;
   }
 
   // Step 4: write fetch state and refresh denormalized podcast metadata

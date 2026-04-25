@@ -19,6 +19,9 @@ export interface ParsedEpisode {
   pubDate: Date;
   durationSec: number | null;
   audioUrl: string;
+  // Нормализованное значение <itunes:episodeType>: "full" | "trailer" | "bonus" | null.
+  // Bonus-эпизоды у Либо-Либо считаются премиальными (см. refresh.ts).
+  episodeType: "full" | "trailer" | "bonus" | null;
 }
 
 const xml = new XMLParser({
@@ -59,6 +62,7 @@ export function parseRSS(xmlBody: string): ParsedFeed {
       pubDate,
       durationSec: parseDuration(textOf(item["itunes:duration"])),
       audioUrl,
+      episodeType: parseEpisodeType(textOf(item["itunes:episodeType"])),
     });
   }
 
@@ -99,6 +103,12 @@ function extractGuid(v: unknown): string | null {
   return null;
 }
 
+function parseEpisodeType(raw: string | null): "full" | "trailer" | "bonus" | null {
+  if (!raw) return null;
+  const v = raw.trim().toLowerCase();
+  return v === "full" || v === "trailer" || v === "bonus" ? v : null;
+}
+
 // Parses iTunes duration: either "HH:MM:SS", "MM:SS", or a bare seconds count.
 function parseDuration(raw: string | null): number | null {
   if (!raw) return null;
@@ -132,4 +142,5 @@ interface RawItem {
   enclosure?: { "@_url"?: string };
   "itunes:summary"?: unknown;
   "itunes:duration"?: unknown;
+  "itunes:episodeType"?: unknown;
 }
