@@ -118,6 +118,9 @@ export async function listAllShowsByFeedUrl(): Promise<Map<string, string>> {
       if (url) map.set(url, s.id);
     }
     const total = list.meta?.totalPages ?? 1;
+    console.log(
+      `[transistor-api] shows page ${page}/${total} → ${map.size} shows so far`,
+    );
     if (page >= total) return map;
     page += 1;
   }
@@ -131,11 +134,14 @@ export async function listAllShowsByFeedUrl(): Promise<Map<string, string>> {
 export async function listAllEpisodesByShowId(): Promise<Map<string, TransistorEpisode[]>> {
   const byShow = new Map<string, TransistorEpisode[]>();
   let page = 1;
+  let processed = 0;
   for (;;) {
     const list = await getJSON<JsonApiList<EpisodeAttrs>>("/episodes", {
       "pagination[page]": String(page),
       "pagination[per]": String(PAGE_SIZE),
     });
+    const totalCount = list.meta?.totalCount;
+    const totalPages = list.meta?.totalPages ?? 1;
     for (const e of list.data) {
       const showId = e.relationships?.show?.data?.id;
       if (!showId) continue;
@@ -156,8 +162,12 @@ export async function listAllEpisodesByShowId(): Promise<Map<string, TransistorE
       if (bucket) bucket.push(ep);
       else byShow.set(showId, [ep]);
     }
-    const total = list.meta?.totalPages ?? 1;
-    if (page >= total) break;
+    processed += list.data.length;
+    const totalLabel = typeof totalCount === "number" ? totalCount : "?";
+    console.log(
+      `[transistor-api] episodes page ${page}/${totalPages} → ${processed}/${totalLabel} fetched, ${byShow.size} shows touched`,
+    );
+    if (page >= totalPages) break;
     page += 1;
   }
   return byShow;

@@ -27,6 +27,10 @@ export async function refreshAllFeeds(): Promise<RefreshSummary> {
     include: { feedFetch: true },
   });
 
+  console.log(
+    `[refresh] starting: ${podcasts.length} podcasts, transistor api ${apiEnabled ? "enabled" : "disabled"}`,
+  );
+
   // Pull the entire account from Transistor in two paginated calls (one for
   // shows, one for all episodes) instead of issuing per-podcast requests.
   // Per-podcast fan-out used to trigger Transistor's HTTP 429 rate limit,
@@ -37,6 +41,13 @@ export async function refreshAllFeeds(): Promise<RefreshSummary> {
     try {
       showIdByFeedUrl = await api.listAllShowsByFeedUrl();
       episodesByShowId = await api.listAllEpisodesByShowId();
+      const totalEps = Array.from(episodesByShowId.values()).reduce(
+        (n, arr) => n + arr.length,
+        0,
+      );
+      console.log(
+        `[transistor-api] account fetch ok: ${showIdByFeedUrl.size} shows, ${totalEps} episodes total`,
+      );
     } catch (err) {
       const msg = err instanceof Error ? err.message : String(err);
       console.error(`[transistor-api] account fetch failed: ${msg}`);
@@ -47,13 +58,21 @@ export async function refreshAllFeeds(): Promise<RefreshSummary> {
 
   const results: RefreshResult[] = [];
   let i = 0;
+  let processed = 0;
+  const total = podcasts.length;
 
   await Promise.all(
     Array.from({ length: CONCURRENCY }, async () => {
       while (i < podcasts.length) {
         const podcast = podcasts[i++];
         if (!podcast) break;
-        results.push(await refreshOne(podcast, apiEnabled, showIdByFeedUrl, episodesByShowId));
+        const result = await refreshOne(podcast, apiEnabled, showIdByFeedUrl, episodesByShowId);
+        results.push(result);
+        processed += 1;
+        const tag = result.status === "error"
+          ? `error: ${result.error}`
+          : `${result.status} public=${result.publicEpisodes ?? 0} premium=${result.premiumEpisodes ?? 0}`;
+        console.log(`[refresh] ${processed}/${total} ${podcast.name} → ${tag}`);
       }
     }),
   );
