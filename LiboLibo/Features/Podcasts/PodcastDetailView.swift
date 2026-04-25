@@ -37,8 +37,7 @@ struct PodcastDetailView: View {
                     .clipShape(RoundedRectangle(cornerRadius: Theme.radiusLarge))
 
                     Text(podcast.name)
-                        .font(.title2)
-                        .fontWeight(.semibold)
+                        .font(Theme.screenTitle)
                         .multilineTextAlignment(.center)
 
                     subscribeButton(tint: tint, accent: accent)

@@ -31,7 +31,7 @@ struct EpisodeRow: View {
                 }
 
                 Text(episode.title)
-                    .font(.headline)
+                    .font(Theme.itemTitle)
                     .foregroundStyle(.primary)
 
                 if showsPreview {
