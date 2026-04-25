@@ -13,6 +13,10 @@ final class PlayerService {
     private(set) var currentTime: TimeInterval = 0
     private(set) var duration: TimeInterval = 0
 
+    /// Все эпизоды текущего подкаста, отсортированные от старых к новым.
+    /// Используется для навигации по выпускам (вперёд/назад) и отображения очереди.
+    private(set) var feedContext: [Episode] = []
+
     var rate: Float = 1.0 {
         didSet {
             if isPlaying {
@@ -72,11 +76,17 @@ final class PlayerService {
         configureAudioSession()
         setupTimeObserver()
         setupRemoteCommands()
+        setupEndOfItemObserver()
     }
 
     // MARK: - Public API
 
-    func play(_ episode: Episode) {
+    /// Запускает эпизод. Если передан context — обновляет ленту эпизодов подкаста.
+    /// context должен быть отсортирован от старых к новым.
+    func play(_ episode: Episode, context: [Episode] = []) {
+        if !context.isEmpty {
+            feedContext = context
+        }
         if currentEpisode?.id == episode.id {
             resume()
             return
@@ -157,6 +167,29 @@ final class PlayerService {
         updateNowPlayingInfo()
     }
 
+    private func setupEndOfItemObserver() {
+        NotificationCenter.default.addObserver(
+            forName: AVPlayerItem.didPlayToEndTimeNotification,
+            object: nil,
+            queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                guard let self else { return }
+                self.playNextInContext()
+            }
+        }
+    }
+
+    private func playNextInContext() {
+        guard let current = currentEpisode,
+              let idx = feedContext.firstIndex(where: { $0.id == current.id }),
+              idx + 1 < feedContext.count else {
+            isPlaying = false
+            return
+        }
+        play(feedContext[idx + 1])
+    }
+
     private func configureAudioSession() {
         let session = AVAudioSession.sharedInstance()
         try? session.setCategory(.playback, mode: .default, options: [])
@@ -203,6 +236,10 @@ final class PlayerService {
         cc.skipBackwardCommand.preferredIntervals = [10]
         cc.skipBackwardCommand.addTarget { [weak self] _ in
             Task { @MainActor in self?.skip(by: -10) }
+            return .success
+        }
+        cc.nextTrackCommand.addTarget { [weak self] _ in
+            Task { @MainActor in self?.playNextInContext() }
             return .success
         }
         cc.changePlaybackPositionCommand.addTarget { [weak self] event in

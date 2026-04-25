@@ -8,6 +8,7 @@ struct PlayerView: View {
     @Environment(PodcastColorService.self) private var colors
     @Environment(\.dismiss) private var dismiss
     @State private var showsNotes = false
+    @State private var showQueue = false
 
     var body: some View {
         if let episode = player.currentEpisode {
@@ -40,6 +41,8 @@ struct PlayerView: View {
 
                 UtilityRow(episode: episode, tint: tint) {
                     showsNotes = true
+                } onShowQueue: {
+                    showQueue = true
                 }
 
                 Spacer(minLength: 24)
@@ -53,6 +56,9 @@ struct PlayerView: View {
             }
             .sheet(isPresented: $showsNotes) {
                 EpisodeNotesSheet(episode: episode)
+            }
+            .sheet(isPresented: $showQueue) {
+                QueueSheetView()
             }
         }
     }
@@ -189,6 +195,7 @@ private struct UtilityRow: View {
     let episode: Episode
     let tint: TintColor?
     let onShowNotes: () -> Void
+    let onShowQueue: () -> Void
 
     @Environment(PlayerService.self) private var player
 
@@ -220,6 +227,16 @@ private struct UtilityRow: View {
             }
             .buttonStyle(.plain)
             .accessibilityLabel("Описание выпуска")
+
+            Button(action: onShowQueue) {
+                Image(systemName: "list.bullet")
+                    .font(.title3)
+                    .foregroundStyle(.primary)
+                    .frame(width: 44, height: 44)
+                    .contentShape(Rectangle())
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Очередь")
         }
     }
 }
@@ -290,11 +307,13 @@ private struct PillButton: View {
     var body: some View {
         let highlightedBg = tint?.accent ?? Color.primary.opacity(0.7)
         Button(action: action) {
-            HStack(spacing: 6) {
+            HStack(spacing: text.isEmpty ? 0 : 6) {
                 Image(systemName: icon)
-                Text(text)
-                    .font(.subheadline)
-                    .fontWeight(.medium)
+                if !text.isEmpty {
+                    Text(text)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
             }
             .padding(.horizontal, 14)
             .padding(.vertical, 10)

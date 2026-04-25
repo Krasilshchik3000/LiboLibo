@@ -77,7 +77,10 @@ struct PodcastDetailView: View {
                     ForEach(episodes) { episode in
                         EpisodeListItem(
                             episode: episode,
-                            onPlay: { player.play(episode) },
+                            onPlay: {
+                                let context = episodes.sorted { $0.pubDate < $1.pubDate }
+                                player.play(episode, context: context)
+                            },
                             showsPodcastName: false
                         )
                         .listRowBackground(Color.clear)
