@@ -29,8 +29,9 @@ model Podcast {
   createdAt         DateTime  @default(now()) @map("created_at")
   updatedAt         DateTime  @updatedAt @map("updated_at")
 
-  episodes  Episode[]
-  feedFetch FeedFetch?
+  episodes       Episode[]
+  feedFetch      FeedFetch?
+  instagramPosts InstagramPost[]
 
   @@map("podcasts")
 }
@@ -47,6 +48,8 @@ model Episode {
   isPremium   Boolean  @default(false) @map("is_premium")
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
+
+  instagramPosts InstagramPost[]
 
   @@index([podcastId, pubDate(sort: Desc)])
   @@index([pubDate(sort: Desc)])
@@ -71,4 +74,72 @@ model Device {
   lastSeenAt DateTime @default(now()) @map("last_seen_at")
 
   @@map("devices")
+}
+
+// Instagram-лента: см. docs/specs/step-03-instagram-feed.md.
+// Посты затягиваются коллектором из Graph API со статусом PENDING. Файлы
+// медиа на этом этапе НЕ скачиваются — это делает downloader (Фаза B).
+
+model InstagramPost {
+  id            String     @id @default(uuid()) @db.Uuid
+  igMediaId     String     @unique @map("ig_media_id")
+  igPermalink   String     @map("ig_permalink")
+  type          IgPostType
+  caption       String?
+  igCreatedAt   DateTime   @map("ig_created_at")
+  status        IgStatus   @default(PENDING)
+  publishedAt   DateTime?  @map("published_at")
+  ctaType       IgCtaType? @map("cta_type")
+  ctaEpisodeId  String?    @map("cta_episode_id")
+  ctaEpisode    Episode?   @relation(fields: [ctaEpisodeId], references: [id], onDelete: SetNull)
+  ctaPodcastId  BigInt?    @map("cta_podcast_id")
+  ctaPodcast    Podcast?   @relation(fields: [ctaPodcastId], references: [id], onDelete: SetNull)
+  ctaUrl        String?    @map("cta_url")
+  ctaLabel      String?    @map("cta_label")
+  createdAt     DateTime   @default(now()) @map("created_at")
+  updatedAt     DateTime   @updatedAt @map("updated_at")
+
+  media InstagramMedia[]
+
+  @@index([status, publishedAt(sort: Desc)])
+  @@map("instagram_posts")
+}
+
+model InstagramMedia {
+  id            String        @id @default(uuid()) @db.Uuid
+  postId        String        @map("post_id") @db.Uuid
+  post          InstagramPost @relation(fields: [postId], references: [id], onDelete: Cascade)
+  order         Int
+  kind          IgMediaKind
+  filePath      String        @map("file_path")
+  thumbnailPath String?       @map("thumbnail_path")
+  width         Int
+  height        Int
+  durationSec   Int?          @map("duration_sec")
+
+  @@unique([postId, order])
+  @@map("instagram_media")
+}
+
+enum IgPostType {
+  IMAGE
+  CAROUSEL
+  VIDEO
+}
+
+enum IgStatus {
+  PENDING
+  PUBLISHED
+  HIDDEN
+}
+
+enum IgCtaType {
+  EPISODE
+  PODCAST
+  LINK
+}
+
+enum IgMediaKind {
+  IMAGE
+  VIDEO
 }
