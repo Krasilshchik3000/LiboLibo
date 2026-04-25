@@ -10,41 +10,41 @@ struct PlayerView: View {
 
     var body: some View {
         if let episode = player.currentEpisode {
-            ZStack {
-                BlurredBackdrop(url: episode.podcastArtworkUrl)
+            VStack(spacing: 0) {
+                Spacer(minLength: 12)
 
-                VStack(spacing: 0) {
-                    Spacer(minLength: 12)
+                Artwork(url: episode.podcastArtworkUrl)
 
-                    Artwork(url: episode.podcastArtworkUrl)
+                Spacer().frame(height: 24)
 
-                    Spacer().frame(height: 24)
+                Titles(episode: episode)
+                    .padding(.horizontal, 24)
 
-                    Titles(episode: episode)
-                        .padding(.horizontal, 24)
+                Spacer().frame(height: 22)
 
-                    Spacer().frame(height: 22)
+                ProgressBar()
+                    .padding(.horizontal, 24)
 
-                    ProgressBar()
-                        .padding(.horizontal, 24)
+                Spacer().frame(height: 18)
 
-                    Spacer().frame(height: 18)
+                BigControls()
 
-                    BigControls()
+                Spacer().frame(height: 18)
 
-                    Spacer().frame(height: 18)
+                VolumeRow()
+                    .padding(.horizontal, 24)
 
-                    VolumeRow()
-                        .padding(.horizontal, 24)
+                Spacer().frame(height: 18)
 
-                    Spacer().frame(height: 18)
-
-                    UtilityRow(episode: episode) {
-                        showsNotes = true
-                    }
-
-                    Spacer(minLength: 24)
+                UtilityRow(episode: episode) {
+                    showsNotes = true
                 }
+
+                Spacer(minLength: 24)
+            }
+            .frame(maxWidth: .infinity, maxHeight: .infinity)
+            .background {
+                BlurredBackdrop(url: episode.podcastArtworkUrl)
             }
             .preferredColorScheme(.dark)
             .sheet(isPresented: $showsNotes) {
@@ -283,6 +283,7 @@ private struct BlurredBackdrop: View {
                     Color.gray.opacity(0.1)
                 }
             }
+            .clipped()
             .ignoresSafeArea()
 
             Color.black.opacity(0.25).ignoresSafeArea()
@@ -334,3 +335,4 @@ private struct PillButton: View {
         .buttonStyle(.plain)
     }
 }
+
