@@ -62,7 +62,7 @@ struct LiboLiboApp: App {
                 }
                 .sheet(isPresented: $showsWelcomePaywall) {
                     AdaptyPaywallView(
-                        placementId: "welcome",
+                        placementId: "default",
                         onPurchase: {
                             showsWelcomePaywall = false
                             Task {

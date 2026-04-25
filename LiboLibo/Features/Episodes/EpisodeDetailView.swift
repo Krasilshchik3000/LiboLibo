@@ -32,7 +32,7 @@ struct EpisodeDetailView: View {
         }
         .sheet(isPresented: $showsPaywall) {
             AdaptyPaywallView(
-                placementId: "episode-trigger",
+                placementId: "default",
                 onPurchase: {
                     showsPaywall = false
                     Task {
