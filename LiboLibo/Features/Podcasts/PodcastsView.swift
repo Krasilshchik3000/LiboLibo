@@ -67,6 +67,8 @@ struct PodcastsView: View {
     }
 }
 
+/// Та же типографика, что и в `EpisodeRow` (Фид):
+/// .caption — артист, .headline — название, .subheadline — превью описания.
 private struct PodcastRow: View {
     let podcast: Podcast
 
@@ -80,21 +82,23 @@ private struct PodcastRow: View {
                     Color.secondary.opacity(0.15)
                 }
             }
-            .frame(width: 64, height: 64)
+            .frame(width: 80, height: 80)
             .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 4) {
-                Text(podcast.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
                 Text(podcast.artist)
                     .font(.caption)
                     .foregroundStyle(.secondary)
+
+                Text(podcast.name)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+
                 if let desc = podcast.description {
                     let preview = desc.firstSentences(maxCount: 2)
                     if !preview.isEmpty {
                         Text(preview)
-                            .font(.footnote)
+                            .font(.subheadline)
                             .foregroundStyle(.secondary)
                             .padding(.top, 2)
                     }
@@ -102,7 +106,7 @@ private struct PodcastRow: View {
             }
             Spacer(minLength: 0)
         }
-        .padding(.vertical, 4)
+        .padding(.vertical, 8)
     }
 }
 

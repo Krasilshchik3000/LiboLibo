@@ -31,7 +31,7 @@ struct PlayerView: View {
 
                 Spacer().frame(height: 18)
 
-                VolumeRow()
+                VolumeSlider()
                     .padding(.horizontal, 24)
 
                 Spacer().frame(height: 18)
@@ -176,21 +176,6 @@ private struct BigControls: View {
             .buttonStyle(.plain)
 
             ControlButton(systemImage: "goforward.10", size: 30) { player.skip(by: 10) }
-        }
-    }
-}
-
-private struct VolumeRow: View {
-    var body: some View {
-        HStack(spacing: 10) {
-            Image(systemName: "speaker.fill")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
-            SystemVolumeSlider()
-                .frame(height: 28)
-            Image(systemName: "speaker.wave.3.fill")
-                .font(.footnote)
-                .foregroundStyle(.white.opacity(0.7))
         }
     }
 }
