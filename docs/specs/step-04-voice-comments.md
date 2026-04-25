@@ -372,7 +372,7 @@ Live Activity не требует отдельного capability, но в `Info
 
 ### Бэкенд
 
-1. Добавить модели `User`, `Comment` в `prisma/schema.prisma`. Связь `Episode.comments`. `prisma migrate dev`, `prisma generate`.
+1. Добавить модели `User`, `Comment` в `prisma/schema.prisma`. Связь `Episode.comments`. На фазе 2.0 проект использует `prisma db push` (не миграционные файлы) — соблюдаем эту конвенцию. `prisma generate`.
 2. Создать `api/src/birdNames.ts` с pool ≈1000+ русских названий птиц. Утилита `pickBirdName(profileId): { name, suffixUsed }`.
 3. Middleware `requirePremium.ts`. Тесты на 402.
 4. Volume-helper: `audioStorage.ts` — `saveCommentAudio(buffer): Promise<{path, size}>`, `deleteCommentAudio(path): Promise<void>`, `streamCommentAudio(path, res)`. `mkdir -p` при инициализации.
