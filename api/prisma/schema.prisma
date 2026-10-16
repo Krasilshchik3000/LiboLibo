@@ -46,6 +46,15 @@ model Episode {
   durationSec Int?     @map("duration_sec")
   audioUrl    String   @map("audio_url")
   isPremium   Boolean  @default(false) @map("is_premium")
+
+  // Семантический поиск: эмбеддинг title+summary через e5-small (384 dim).
+  // Prisma не поддерживает vector нативно — Unsupported + raw-запросы
+  // (см. lib/embedEpisodes.ts и routes/search.ts).
+  // embeddingText — текст, по которому посчитан вектор; если он разошёлся
+  // с текущим title/summary, cron пересчитывает эмбеддинг (защита от staleness).
+  embedding     Unsupported("vector(384)")?
+  embeddingText String?                     @map("embedding_text")
+
   createdAt   DateTime @default(now()) @map("created_at")
   updatedAt   DateTime @updatedAt @map("updated_at")
 

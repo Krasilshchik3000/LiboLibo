@@ -4,7 +4,10 @@
     "builder": "RAILPACK"
   },
   "deploy": {
-    "preDeployCommand": ["npx prisma db push --skip-generate"],
+    "preDeployCommand": [
+      "echo 'CREATE EXTENSION IF NOT EXISTS vector;' | npx prisma db execute --url \"$DATABASE_URL\" --stdin",
+      "npx prisma db push --skip-generate"
+    ],
     "healthcheckPath": "/v1/health",
     "healthcheckTimeout": 30,
     "restartPolicyType": "ON_FAILURE",
