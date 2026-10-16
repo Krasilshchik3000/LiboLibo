@@ -4,6 +4,8 @@ struct PodcastsView: View {
     @Environment(PodcastsRepository.self) private var repository
     @Environment(PodcastColorService.self) private var colors
 
+    @Binding var openPodcastId: Int?
+    @Binding var currentOpenedPodcastId: Int?
     @State private var path = NavigationPath()
 
     var body: some View {
@@ -12,21 +14,21 @@ struct PodcastsView: View {
                 if !active.isEmpty {
                     Section("Выходят сейчас") {
                         ForEach(active) { podcast in
-                            PodcastListItem(podcast: podcast) { path.append(podcast) }
+                            PodcastListItem(podcast: podcast) { open(podcast, replacingStack: false) }
                         }
                     }
                 }
                 if !recent.isEmpty {
                     Section("Недавно выходили") {
                         ForEach(recent) { podcast in
-                            PodcastListItem(podcast: podcast) { path.append(podcast) }
+                            PodcastListItem(podcast: podcast) { open(podcast, replacingStack: false) }
                         }
                     }
                 }
                 if !dormant.isEmpty {
                     Section("Давно не выходят") {
                         ForEach(dormant) { podcast in
-                            PodcastListItem(podcast: podcast) { path.append(podcast) }
+                            PodcastListItem(podcast: podcast) { open(podcast, replacingStack: false) }
                         }
                     }
                 }
@@ -35,6 +37,26 @@ struct PodcastsView: View {
             .navigationTitle("Подкасты")
             .navigationDestination(for: Podcast.self) { podcast in
                 PodcastDetailView(podcast: podcast, path: $path)
+            }
+            .task(id: openPodcastId) {
+                if let id = openPodcastId,
+                   let podcast = repository.podcasts.first(where: { $0.id == id }) {
+                    try? await Task.sleep(nanoseconds: 180_000_000) // ~0.18s for smooth push after tab switch
+                    open(podcast, replacingStack: true)
+                    openPodcastId = nil
+                }
+            }
+            .onChange(of: repository.podcasts.count) { _, _ in
+                if let id = openPodcastId,
+                   let podcast = repository.podcasts.first(where: { $0.id == id }) {
+                    open(podcast, replacingStack: true)
+                    openPodcastId = nil
+                }
+            }
+            .onChange(of: path.count) { _, newCount in
+                if newCount == 0 {
+                    currentOpenedPodcastId = nil
+                }
             }
         }
         .task(id: repository.podcasts.count) {
@@ -80,6 +102,19 @@ struct PodcastsView: View {
                 return d < twelveAgo
             }
             .sorted { $0.name.localizedCaseInsensitiveCompare($1.name) == .orderedAscending }
+    }
+
+    private func open(_ podcast: Podcast, replacingStack: Bool) {
+        if replacingStack {
+            var newPath = NavigationPath()
+            newPath.append(podcast)
+            path = newPath
+            currentOpenedPodcastId = podcast.id
+            return
+        }
+
+        path.append(podcast)
+        currentOpenedPodcastId = podcast.id
     }
 }
 
@@ -175,6 +210,6 @@ private struct SubscribeButton: View {
 }
 
 #Preview {
-    PodcastsView()
+    PodcastsView(openPodcastId: .constant(nil), currentOpenedPodcastId: .constant(nil))
         .environment(PodcastsRepository())
 }
