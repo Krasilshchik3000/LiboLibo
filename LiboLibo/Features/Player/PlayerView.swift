@@ -1,64 +1,72 @@
 import SwiftUI
 
-/// Now-playing screen в духе Apple Podcasts: компактная обложка, две строки
-/// заголовка, тонкий прогресс-слайдер с временем, крупные контролы, регулятор
-/// громкости, нижний ряд утилит.
 struct PlayerView: View {
     @Environment(PlayerService.self) private var player
     @Environment(PodcastColorService.self) private var colors
+    @Environment(PodcastsRepository.self) private var repository
+    @Environment(DownloadService.self) private var downloads
     @Environment(\.dismiss) private var dismiss
+
     @State private var showsNotes = false
     @State private var showQueue = false
+    @State private var path = NavigationPath()
 
     var body: some View {
-        if let episode = player.currentEpisode {
-            let tint = colors.tint(for: episode.podcastId)
-            VStack(spacing: 0) {
-                Spacer(minLength: 12)
+        NavigationStack(path: $path) {
+            if let episode = player.currentEpisode {
+                let tint = colors.tint(for: episode.podcastId)
+                VStack(spacing: 0) {
+                    Spacer(minLength: 12)
 
-                Artwork(url: episode.podcastArtworkUrl)
+                    Artwork(url: episode.podcastArtworkUrl)
 
-                Spacer().frame(height: 24)
+                    Spacer().frame(height: 24)
 
-                Titles(episode: episode)
+                    HStack(alignment: .top, spacing: 8) {
+                        Titles(episode: episode) { showsNotes = true }
+                        MoreMenu(episode: episode, tint: tint, path: $path)
+                    }
                     .padding(.horizontal, 24)
 
-                Spacer().frame(height: 22)
+                    Spacer().frame(height: 22)
 
-                ProgressBar(tint: tint)
-                    .padding(.horizontal, 24)
+                    ProgressBar(tint: tint)
+                        .padding(.horizontal, 24)
 
-                Spacer().frame(height: 18)
+                    Spacer().frame(height: 18)
 
-                BigControls()
+                    BigControls()
 
-                Spacer().frame(height: 18)
+                    Spacer().frame(height: 18)
 
-                VolumeSlider()
-                    .padding(.horizontal, 24)
+                    VolumeSlider()
+                        .padding(.horizontal, 24)
 
-                Spacer().frame(height: 18)
+                    Spacer().frame(height: 8)
 
-                UtilityRow(episode: episode, tint: tint) {
-                    showsNotes = true
-                } onShowQueue: {
-                    showQueue = true
+                    UtilityRow(episode: episode, tint: tint) {
+                        showQueue = true
+                    }
+
+                    Spacer(minLength: 24)
                 }
-
-                Spacer(minLength: 24)
-            }
-            .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background {
-                TintBackground(tint: tint)
-            }
-            .task(id: episode.podcastId) {
-                colors.ensureTint(for: episode.podcastId, artworkUrl: episode.podcastArtworkUrl)
-            }
-            .sheet(isPresented: $showsNotes) {
-                EpisodeNotesSheet(episode: episode)
-            }
-            .sheet(isPresented: $showQueue) {
-                QueueSheetView()
+                .frame(maxWidth: .infinity, maxHeight: .infinity)
+                .background { TintBackground(tint: tint) }
+                .task(id: episode.podcastId) {
+                    colors.ensureTint(for: episode.podcastId, artworkUrl: episode.podcastArtworkUrl)
+                }
+                .sheet(isPresented: $showsNotes) {
+                    EpisodeNotesSheet(episode: episode)
+                }
+                .sheet(isPresented: $showQueue) {
+                    QueueSheetView()
+                }
+                .navigationDestination(for: Episode.self) { ep in
+                    EpisodeDetailView(episode: ep)
+                }
+                .navigationDestination(for: Podcast.self) { podcast in
+                    PodcastDetailView(podcast: podcast, path: $path)
+                }
             }
         }
     }
@@ -88,28 +96,89 @@ private struct Artwork: View {
 
 private struct Titles: View {
     let episode: Episode
+    let onShowNotes: () -> Void
 
     var body: some View {
-        VStack(spacing: 4) {
+        VStack(alignment: .leading, spacing: 4) {
+            Button(action: onShowNotes) {
+                Text(episode.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                    .multilineTextAlignment(.leading)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+            }
+            .buttonStyle(.plain)
+
             Text(episode.podcastName)
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .fixedSize(horizontal: false, vertical: true)
-
-            Text(episode.title)
-                .font(.headline)
-                .foregroundStyle(.primary)
-                .multilineTextAlignment(.center)
                 .fixedSize(horizontal: false, vertical: true)
         }
-        .frame(maxWidth: .infinity)
     }
 }
 
-/// Apple-Podcasts-style тонкий прогресс. Без видимого thumb-а в idle, лёгкий
-/// наплыв при скрабинге. Заполненная часть прокрашена «фирменным» цветом
-/// подкаста, остаток — мягким полупрозрачным `secondary`.
+private struct MoreMenu: View {
+    let episode: Episode
+    let tint: TintColor?
+    @Binding var path: NavigationPath
+
+    @Environment(PodcastsRepository.self) private var repository
+    @Environment(DownloadService.self) private var downloads
+
+    var body: some View {
+        Menu {
+            // Поделиться
+            ShareLink(
+                item: "\(episode.podcastName) — \(episode.title)",
+                subject: Text(episode.title),
+                message: Text("Слушаю в Либо-Либо")
+            ) {
+                Label("Поделиться", systemImage: "square.and.arrow.up")
+            }
+
+            Divider()
+
+            // Загрузка
+            Button {
+                downloads.toggle(episode)
+            } label: {
+                let downloaded = downloads.status(for: episode) == .downloaded
+                Label(
+                    downloaded ? "Удалить загрузку" : "Загрузить выпуск",
+                    systemImage: downloaded ? "trash" : "icloud.and.arrow.down"
+                )
+            }
+
+            Divider()
+
+            // Перейти к подкасту
+            if let podcast = repository.podcasts.first(where: { $0.id == episode.podcastId }) {
+                Button {
+                    path.append(podcast)
+                } label: {
+                    Label("Перейти к подкасту", systemImage: "rectangle.grid.2x2")
+                }
+            }
+
+            // Перейти к выпуску
+            Button {
+                path.append(episode)
+            } label: {
+                Label("Перейти к выпуску", systemImage: "play.circle")
+            }
+        } label: {
+            Image(systemName: "ellipsis.circle")
+                .font(.title3)
+                .foregroundStyle(.primary)
+                .frame(width: 44, height: 44)
+                .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+/// Apple-Podcasts-style тонкий прогресс.
 private struct ProgressBar: View {
     let tint: TintColor?
     @Environment(PlayerService.self) private var player
@@ -194,13 +263,13 @@ private struct BigControls: View {
 private struct UtilityRow: View {
     let episode: Episode
     let tint: TintColor?
-    let onShowNotes: () -> Void
     let onShowQueue: () -> Void
 
     @Environment(PlayerService.self) private var player
 
     var body: some View {
         HStack(spacing: 12) {
+            // Скорость воспроизведения
             PillButton(
                 icon: "speedometer",
                 text: player.rate != 1.0 ? PlayerService.formatRate(player.rate) : "",
@@ -208,25 +277,10 @@ private struct UtilityRow: View {
                 tint: tint
             ) { player.cycleSpeed() }
 
-            PillButton(
-                icon: "moon.zzz",
-                text: player.sleepTimer.isActive ? player.sleepTimer.label : "",
-                isHighlighted: player.sleepTimer.isActive,
-                tint: tint
-            ) { player.cycleSleepTimer() }
+            SleepTimerMenu(tint: tint)
 
             DownloadButton(episode: episode, idleTint: .primary)
                 .frame(minWidth: 44, minHeight: 44)
-
-            Button(action: onShowNotes) {
-                Image(systemName: "doc.text")
-                    .font(.title3)
-                    .foregroundStyle(.primary)
-                    .frame(width: 44, height: 44)
-                    .contentShape(Rectangle())
-            }
-            .buttonStyle(.plain)
-            .accessibilityLabel("Описание выпуска")
 
             Button(action: onShowQueue) {
                 Image(systemName: "list.bullet")
@@ -238,6 +292,52 @@ private struct UtilityRow: View {
             .buttonStyle(.plain)
             .accessibilityLabel("Очередь")
         }
+    }
+}
+
+private struct SleepTimerMenu: View {
+    let tint: TintColor?
+    @Environment(PlayerService.self) private var player
+
+    var body: some View {
+        let highlighted = player.sleepTimer.isActive
+        let highlightColor = tint?.accent ?? Color.primary.opacity(0.7)
+
+        Menu {
+            ForEach(PlayerService.SleepTimer.allCases, id: \.self) { option in
+                Button {
+                    player.setSleepTimer(option)
+                } label: {
+                    if player.sleepTimer == option {
+                        Label(option.menuLabel, systemImage: "checkmark")
+                    } else {
+                        Text(option.menuLabel)
+                    }
+                }
+            }
+        } label: {
+            HStack(spacing: highlighted ? 6 : 0) {
+                Image(systemName: "moon.zzz")
+                if highlighted {
+                    Text(player.sleepTimer.pillLabel)
+                        .font(.subheadline)
+                        .fontWeight(.medium)
+                }
+            }
+            .padding(.horizontal, 14)
+            .padding(.vertical, 10)
+            .frame(minHeight: 44)
+            .background(
+                Capsule()
+                    .fill(highlighted
+                          ? AnyShapeStyle(highlightColor)
+                          : AnyShapeStyle(.thinMaterial))
+            )
+            .foregroundStyle(highlighted ? Color.white : .primary)
+            .contentShape(Capsule())
+        }
+        .menuStyle(.button)
+        .buttonStyle(.plain)
     }
 }
 

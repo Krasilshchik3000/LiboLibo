@@ -45,21 +45,37 @@ final class PlayerService {
     // MARK: - Sleep timer
 
     enum SleepTimer: CaseIterable, Hashable {
-        case off, fifteen, thirty
+        case off, fifteen, thirty, fortyfive, untilEnd
 
         var minutes: Int? {
             switch self {
-            case .off:      return nil
-            case .fifteen:  return 15
-            case .thirty:   return 30
+            case .off:       return nil
+            case .fifteen:   return 15
+            case .thirty:    return 30
+            case .fortyfive: return 45
+            case .untilEnd:  return nil
             }
         }
 
-        var label: String {
+        /// Короткая метка для pill-кнопки.
+        var pillLabel: String {
             switch self {
-            case .off:      return "Сон"
-            case .fifteen:  return "15м"
-            case .thirty:   return "30м"
+            case .off:       return "Сон"
+            case .fifteen:   return "15м"
+            case .thirty:    return "30м"
+            case .fortyfive: return "45м"
+            case .untilEnd:  return "Эп."
+            }
+        }
+
+        /// Полная метка для меню.
+        var menuLabel: String {
+            switch self {
+            case .off:       return "Выключено"
+            case .fifteen:   return "15 минут"
+            case .thirty:    return "30 минут"
+            case .fortyfive: return "45 минут"
+            case .untilEnd:  return "До конца выпуска"
             }
         }
 
@@ -167,7 +183,7 @@ final class PlayerService {
         rate = all[(idx + 1) % all.count]
     }
 
-    /// Тапом по таймеру сна — Сон → 15м → 30м → Сон.
+    /// Цикличное переключение таймера сна (оставлено для совместимости).
     func cycleSleepTimer() {
         let all = SleepTimer.allCases
         let idx = all.firstIndex(of: sleepTimer) ?? 0
@@ -218,6 +234,11 @@ final class PlayerService {
     }
 
     private func playNextInContext() {
+        if sleepTimer == .untilEnd {
+            isPlaying = false
+            sleepTimer = .off
+            return
+        }
         guard let current = currentEpisode,
               let idx = feedContext.firstIndex(where: { $0.id == current.id }),
               idx + 1 < feedContext.count else {
