@@ -1,4 +1,5 @@
 import { prisma } from "../db.js";
+import { embedMissingEpisodes } from "../lib/embedEpisodes.js";
 import * as api from "./api.js";
 import { fetchPublicMediaUrls } from "./public-rss.js";
 
@@ -99,6 +100,16 @@ export async function refreshAllFeeds(opts: RefreshOptions = {}): Promise<Refres
       ? `error: ${result.error}`
       : `ok episodes=${result.episodes ?? 0} premium=${result.premiumEpisodes ?? 0}`;
     console.log(`[refresh] ${processed}/${total} ${podcast.name} → ${tag}`);
+  }
+
+  // Семантический индекс: досчитываем эмбеддинги для новых/изменённых
+  // эпизодов. Не валим весь refresh, если модель недоступна — семантика
+  // дополнительный слой, метаданные эпизодов важнее.
+  try {
+    const emb = await embedMissingEpisodes();
+    console.log(`[refresh] embeddings: scanned=${emb.scanned} embedded=${emb.embedded}`);
+  } catch (err) {
+    console.error("[refresh] embedding step failed (non-fatal):", err);
   }
 
   return {
