@@ -1,4 +1,13 @@
 {
   "model": "opus",
-  "effortLevel": "high"
+  "effortLevel": "high",
+  "permissions": {
+    "allow": [
+      "mcp__claude_ai_Railway",
+      "mcp__claude_ai_railway",
+      "mcp__d0190248-880f-4403-af6f-1a796a890d8b",
+      "Bash(railway up:*)",
+      "Bash(railway redeploy:*)"
+    ]
+  }
 }
